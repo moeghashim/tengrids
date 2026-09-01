@@ -11,3 +11,6 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
 }));
 
 Image.prototype.decode = () => new Promise(resolve => window.setTimeout(resolve, 10));
+
+// Tell React this is a unit-test environment so act() works without warnings
+(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;

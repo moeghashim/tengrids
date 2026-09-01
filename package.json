@@ -1,5 +1,5 @@
 {
-    "name": "root",
+    "name": "tengrids",
     "version": "6.0.4-alpha25",
     "scripts": {
         "start": "npm run storybook",

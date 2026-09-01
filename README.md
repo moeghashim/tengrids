@@ -1,36 +1,24 @@
 <h1 align="center">
-  <img src="https://raw.githubusercontent.com/glideapps/glide-data-grid/master/media/icon.png" width="224px"/><br/>
-  <b>Glide Data Grid</b>
+  <b>tengrids</b>
 </h1>
 <p align="center">A canvas-based data grid, supporting <b>millions</b> of rows, <b>rapid</b> updating, and <b>native scrolling</b>.</p>
 
-<p align="center">Built as the basis for the <a href="https://www.glideapps.com/data-editor" target="_blank">Glide Data Editor</a>. <a href="https://www.glideapps.com/jobs#open-positions" target="_blank">We're hiring</a>.</p>
+<p align="center">A fork of <a href="https://github.com/glideapps/glide-data-grid" target="_blank">Glide Data Grid</a> by <a href="https://www.glideapps.com" target="_blank">Glide</a>.</p>
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/glideapps/glide-data-grid/master/media/data-grid-dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/glideapps/glide-data-grid/master/media/data-grid.png">
-  <img alt="Glide Data Grid with sample data" src="https://raw.githubusercontent.com/glideapps/glide-data-grid/master/media/data-grid.png">
-</picture>
+# 🙏 Credit
 
-[![Version](https://img.shields.io/npm/v/@glideapps/glide-data-grid?color=blue&label=latest&style=for-the-badge)](https://github.com/glideapps/glide-data-grid/releases)
-[![React 16-19](https://img.shields.io/badge/React-16--19-00ADD8?style=for-the-badge&logo=react)](https://reactjs.org)
-[![Code Coverage](https://img.shields.io/coverallsCoverage/github/glideapps/glide-data-grid?color=457aba&label=Cover&style=for-the-badge)](https://coveralls.io/github/glideapps/glide-data-grid)
-[![npm bundle size](https://img.shields.io/bundlephobia/minzip/@glideapps/glide-data-grid?color=success&label=bundle&style=for-the-badge)](https://bundlephobia.com/package/@glideapps/glide-data-grid)
-[![License](https://img.shields.io/github/license/glideapps/glide-data-grid?color=red&style=for-the-badge)](https://github.com/glideapps/glide-data-grid/blob/main/LICENSE)
-[![Made By Glide](https://img.shields.io/badge/❤_Made_by-Glide-11CCE5?style=for-the-badge&logo=none)](https://www.glideapps.com/jobs)
+tengrids is a fork of [Glide Data Grid](https://github.com/glideapps/glide-data-grid), built by the team at [Glide](https://www.glideapps.com) as the basis for their [Data Editor](https://www.glideapps.com/data-editor). The architecture, rendering engine, and the overwhelming majority of the code in this repository are their work, released under the [MIT license](LICENSE), which this fork retains along with their copyright notice.
 
-# 👩‍💻 Demo and features
+If you're looking for the original project, its home is the upstream repo, with docs at [docs.grid.glideapps.com](https://docs.grid.glideapps.com/) and live examples in their [Storybook](https://glideapps.github.io/glide-data-grid). Consider supporting the upstream project — it's an exceptional piece of engineering.
 
-Lots of fun examples are in our [Storybook](https://glideapps.github.io/glide-data-grid).
-
-You can also visit our [main site](https://grid.glideapps.com).
+This fork tracks upstream v6.0.4-alpha25.
 
 ## Features
 
 -   **It scales to millions of rows**. Cells are rendered lazily on demand for memory efficiency.
 -   **Scrolling is extremely fast**. Native scrolling keeps everything buttery smooth.
 -   **Supports multiple types of cells**. Numbers, text, markdown, bubble, image, drilldown, uri
--   **Fully Free & Open Source**. [MIT licensed](LICENSE), so you can use Grid in commercial projects.
+-   **Fully Free & Open Source**. [MIT licensed](LICENSE), so you can use it in commercial projects.
 -   **Editing is built in**.
 -   **Resizable and movable columns**.
 -   **Variable sized rows**.
@@ -38,33 +26,33 @@ You can also visit our [main site](https://grid.glideapps.com).
 -   **Single and multi-select rows, cells, and columns**.
 -   **Cell rendering can be fully customized**.
 
+# 📦 Packages
+
+This is an npm-workspaces monorepo. The packages currently retain their upstream names until this fork publishes under its own scope:
+
+| Package | Directory | What it is |
+| --- | --- | --- |
+| `@glideapps/glide-data-grid` | [`packages/core`](packages/core) | The grid itself |
+| `@glideapps/glide-data-grid-cells` | [`packages/cells`](packages/cells) | Extra cell renderers (dropdown, sparkline, tags, date picker, …) |
+| `@glideapps/glide-data-grid-source` | [`packages/source`](packages/source) | Data-source hooks (async loading, sorting, undo/redo, …) |
+
 # ⚡ Quick Start
 
-First make sure you are using React 16 or greater (including React 17, 18, and 19). Then install the data grid:
+Make sure you are using React 16 or greater (React 17, 18, and 19 are all supported).
 
-```shell
-npm i @glideapps/glide-data-grid
-```
-
-You may also need to install the peer dependencies if you don't have them already:
-
-```shell
-npm i lodash marked react-responsive-carousel
-```
-
-Create a new `DataEditor` wherever you need to display lots and lots of data
+Create a new `DataEditor` wherever you need to display lots and lots of data:
 
 ```tsx
 <DataEditor getCellContent={getData} columns={columns} rows={numRows} />
 ```
 
-Don't forget to import mandatory CSS
+Don't forget to import the mandatory CSS:
 
 ```ts
 import "@glideapps/glide-data-grid/dist/index.css";
 ```
 
-Making your columns is easy
+Making your columns is easy:
 
 ```ts
 // Grid columns may also provide icon, overlayIcon, menu, style, and theme overrides
@@ -74,7 +62,7 @@ const columns: GridColumn[] = [
 ];
 ```
 
-Last provide data to the grid
+Last, provide data to the grid:
 
 ```ts
 // If fetching data is slow you can use the DataEditor ref to send updates for cells
@@ -102,11 +90,33 @@ function getData([col, row]: Item): GridCell {
 }
 ```
 
-You can [edit this example live](https://codesandbox.io/s/glide-data-grid-template-ydvnnk) on CodeSandbox
+The grid also requires a `<div id="portal" />` near the end of your document body for its overlay editors — see the Prerequisites section of [API.md](packages/core/API.md).
 
 ## Full API documentation
 
-The full [API documentation is on the main site](https://docs.grid.glideapps.com/)
+The API documentation lives in [packages/core/API.md](packages/core/API.md). The upstream project also hosts a rendered version at [docs.grid.glideapps.com](https://docs.grid.glideapps.com/).
+
+# 🛠️ Development
+
+Requirements: Node 20.10+ (see [.nvmrc](.nvmrc)). Building additionally requires bash 4+ and `jq` — note that macOS ships bash 3.2, so `brew install bash jq` first.
+
+```shell
+npm install
+```
+
+Run the Storybook dev environment (the fastest way to see changes live):
+
+```shell
+npm start
+```
+
+Run the tests:
+
+```shell
+npm test
+```
+
+See [AGENTS.md](AGENTS.md) for a full map of the codebase, all build/test commands, and the gotchas that matter when making changes.
 
 # 📒 FAQ
 
@@ -120,21 +130,17 @@ Please read the [Prerequisites section in the docs](packages/core/API.md).
 
 **Does it work with screen readers and other a11y tools?**
 
-Yes. Unfortunately none of the primary developers are accessibility users so there are likely flaws in the implementation we are not aware of. Bug reports welcome!
+Yes. The grid maintains a hidden accessibility DOM tree mirroring the visible cells. Bug reports welcome!
 
 **Does it support my data source?**
 
 Yes.
 
-Data Grid is agnostic about the way you load/store/generate/mutate your data. What it requires is that you tell it which columns you have, how many rows, and to give it a function it can call to get the data for a cell in a specific row and column.
+The grid is agnostic about the way you load/store/generate/mutate your data. What it requires is that you tell it which columns you have, how many rows, and give it a function it can call to get the data for a cell in a specific row and column.
 
 **Does it do sorting, searching, and filtering?**
 
-Search is included. You provide the trigger, we do the search. [Example](https://glideapps.github.io/glide-data-grid/?path=/story/glide-data-grid-docs--search) in our storybook.
-
-Filtering and sorting are something you would have to implement with your data source. There are hooks for adding column header menus if you want that.
-
-The reason we don't add filtering/sorting in by default is that these are usually very application-specific, and can often also be implemented more efficiently in the data source, via a database query, for example.
+Search is included — you provide the trigger, the grid does the search. Sorting is available via the `useColumnSort` hook in the source package. Filtering is something you would implement in your data source, where it can usually be done more efficiently (e.g. via a database query).
 
 **Can it do frozen columns?**
 
@@ -142,51 +148,22 @@ Yes!
 
 **Can I render my own cells?**
 
-Yes, but the renderer has to use HTML Canvas. [Simple example](https://glideapps.github.io/glide-data-grid/?path=/story/glide-data-grid-dataeditor-demos--draw-custom-cells) in our Storybook.
+Yes, but the renderer has to use HTML Canvas. See the custom-cell examples in the Storybook (`npm start`).
 
-**Why does Data Grid use HTML Canvas?**
+**Why does it use HTML Canvas?**
 
-Originally we had implemented our Grid using virtualized rendering. We virtualized both in the horizontal and vertical direction using [react-virtualized](https://github.com/bvaughn/react-virtualized). The problem is simply scrolling performance. Once you need to load/unload hundreds of DOM elements per frame nothing can save you.
-
-There are some hacks you can do like setting timers and entering into a "low fidelity" rendering mode where you only render a single element per cell. This works okay until you want to show hundreds of cells and you are right back to choppy scrolling. It also doesn't really look or feel great.
+The upstream team originally implemented the grid with virtualized DOM rendering ([react-virtualized](https://github.com/bvaughn/react-virtualized)). The problem is scrolling performance: once you need to load/unload hundreds of DOM elements per frame, nothing can save you. Canvas rendering sidesteps the DOM entirely while a transparent native scroller keeps scrolling feeling native.
 
 **I want to use this with Next.js / Vercel, but I'm getting weird errors**
 
-The easiest way to use the grid with Next is to create a component which wraps up your grid and then import it as a dynamic.
-
-home.tsx
+The easiest way is to wrap your grid in a component and import it as a dynamic with `ssr: false`:
 
 ```tsx
-import type { NextPage } from "next";
 import dynamic from "next/dynamic";
-import styles from "../styles/Home.module.css";
 
-const Grid = dynamic(
-    () => {
-        return import("../components/Grid");
-    },
-    { ssr: false }
-);
-
-export const Home: NextPage = () => {
-    return (
-        <div className={styles.container}>
-            <main className={styles.main}>
-                <h1 className={styles.title}>Hi</h1>
-                <Grid />
-            </main>
-        </div>
-    );
-};
+const Grid = dynamic(() => import("../components/Grid"), { ssr: false });
 ```
 
-grid.tsx
+# 📄 License
 
-```tsx
-import React from "react";
-import DataEditor from "@glideapps/glide-data-grid";
-
-export default function Grid() {
-    return <DataEditor {...args} />;
-}
-```
+[MIT](LICENSE) — original work copyright Glide, retained by this fork as the license requires.

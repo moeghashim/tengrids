@@ -1,0 +1,23 @@
+{
+    "projectId": "83bf1f56-58a8-4aa4-b190-b3b6baf9a446",
+    "shape": "storybook",
+    "storybookConfigDir": ".storybook",
+    "storybookStatic": ".design-sync/sb-reference",
+    "pkg": "@glideapps/glide-data-grid",
+    "buildCmd": "npm run build -w packages/core && npx cleancss -o packages/core/dist/index.flat.css packages/core/dist/index.css",
+    "cssEntry": "dist/index.flat.css",
+    "readmeHeader": ".design-sync/conventions.md",
+    "libOverrides": {
+        "story-imports.mjs": "stub @linaria/react|core with a runtime styled/css implementation — story helper modules use linaria, which needs a build-time transform esbuild doesn't run"
+    },
+    "titleMap": {
+        "DataEditorDemos": "DataEditor",
+        "Docs": null,
+        "DataGrid": null,
+        "ScrollingDataGrid": null,
+        "TestCases": null,
+        "Bugs": null,
+        "Cells": null,
+        "Source": null
+    }
+}

@@ -9,3 +9,10 @@ storybook-build/
 coverage/
 *.tsbuildinfo
 gen-docs/
+# design-sync transient state
+.design-sync/sb-reference/
+.design-sync/learnings/
+.design-sync/.cache/
+.design-sync/node_modules
+.ds-sync/
+ds-bundle/

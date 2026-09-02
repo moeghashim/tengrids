@@ -61,6 +61,8 @@ Result: 194 lines of bash across 9 files replaced by one ~220-line Node CLI. Onl
 - [x] Baselines generated inside `mcr.microsoft.com/playwright:v1.62.1-noble` (Docker Desktop had to be started first): 6 PNGs in `visual/__snapshots__`. Second run against them: 6/6 pass — rendering is deterministic.
 - [x] `npm pack --dry-run` reviewed: core ships API.md, CHANGELOG, LICENSE, README, dist/ (no src/tests); cells/source ship LICENSE, README, dist/. Lint clean across workspaces (0 errors).
 - [x] Committed + pushed rename, docs, llms.txt, Pages additions, test-project links, Playwright job + baselines.
-- [ ] Publish to npm (blocked on `npm login` by the user), core first.
+- [x] CI on `8c68173`: Build ✓ (consumer projects on `file:` links, React matrix), Visual regression ✓ (Docker baselines matched CI renders), Storybook deploy ✓.
+- [x] Pages site verified serving the agent docs: `llms.txt` (2.9 KB), `API.md` (81.6 KB), `llms-full.txt` (98.5 KB) — all HTTP 200 at https://moeghashim.github.io/tengrids/.
+- [ ] Publish to npm — blocked on `npm login` by the user (npm still E401 at last check). Order once logged in: `tengrids` first, then `tengrids-cells` and `tengrids-source` (they pin core's exact version).
 - [ ] Re-sync claude.ai/design (bundle global changes with the package name) — follow-up.
 - [ ] Re-sync claude.ai/design (bundle global changes with the package name) — follow-up.

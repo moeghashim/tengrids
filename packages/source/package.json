@@ -17,7 +17,7 @@
         "dist"
     ],
     "scripts": {
-        "build": "./build.sh",
+        "build": "node ../../scripts/cli.mjs build source",
         "lint": "eslint src --ext .ts,.tsx",
         "test": "vitest"
     },

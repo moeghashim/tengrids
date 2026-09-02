@@ -26,12 +26,12 @@
         }
     },
     "scripts": {
-        "build": "./build.sh",
+        "build": "node ../../scripts/cli.mjs build core",
         "lint": "concurrently \"npm run cycle-check\" \"eslint src --ext .ts,.tsx\"",
         "cycle-check": "ts-helper -p ./tsconfig.json -r ./src/index.ts -c",
         "test": "vitest",
         "check-package": "package-check",
-        "watch": "chokidar 'src/**/*.ts*' -c './build.sh'"
+        "watch": "chokidar 'src/**/*.ts*' -c 'node ../../scripts/cli.mjs build core'"
     },
     "repository": {
         "type": "git",

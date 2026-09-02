@@ -4,8 +4,8 @@ tengrids is a fork of [glideapps/glide-data-grid](https://github.com/glideapps/g
 
 ## Environment
 
-- **Node 20.10+** (pinned in `.nvmrc`; newer versions work — the suite passes on Node 24).
-- **Building requires bash 4+ and `jq`.** macOS ships bash 3.2; `packages/*/build.sh` probes `/opt/homebrew/bin/bash` and `/usr/local/bin/bash` and exits with "Bash 4 or higher is required" if neither exists. Fix: `brew install bash jq`. Tests, typechecking, and lint all work **without** building — only tasks needing `dist/` output are blocked.
+- **Node 20.10+** (pinned in `.nvmrc`; newer versions work — the suite passes on Node 24). That is the only prerequisite: all build/version/test-matrix tooling is a Node CLI at `scripts/cli.mjs` (no bash, no jq, works on Windows).
+- `packages/cells` and `packages/source` tests import core's **built** `dist/` — build core first (`npm run build -w packages/core`) or their suites fail to resolve `@glideapps/glide-data-grid`.
 - The devcontainer config is stale (Node 14) — don't trust it; use `.nvmrc`.
 
 ## Commands
@@ -18,9 +18,12 @@ All from the repo root unless noted:
 | Core tests | `npm test` | 28 files / ~390 tests, ~10 s. Runs vitest in `packages/core` |
 | Single test file | `cd packages/core && npx vitest run test/copy-paste.test.ts` | |
 | Cells / source tests | `npm run test-cells` / `npm run test-source` | |
-| React 18/19 matrix | `npm run test-18` / `npm run test-19` | Mutates installed deps — re-run `npm install` after |
+| React matrix | `npm run test-18` / `test-19` / `test-latest` | Swaps the installed React, runs core tests, then restores package.json + reinstalls (skipped in CI; `--no-restore` keeps the swap) |
 | Lint + cycle check | `npm run lint -w packages/core` | eslint + `ts-helper -c` dependency-cycle check |
-| Build all | `npm run build` | Needs bash 4+/jq (see above). tsc ESM+CJS in parallel, then linaria CSS extraction |
+| Build all | `npm run build` | tsc ESM+CJS in parallel, linaria CSS extraction, `dist/index.css` — then lint. Per package: `npm run build -w packages/core` |
+| Version bump | `npm run cli -- version 6.1.0` | Sets the version in root + all packages and pins the workspace dep on core |
+| Consumer projects | `npm run test-projects` | `npm ci` in `test-projects/*` and symlinks core into them |
+| Any CLI command | `npm run cli -- <build\|version\|test\|bootstrap>` | `node scripts/cli.mjs help` lists them |
 | Storybook | `npm start` | Port 9009; ~60 examples double as the docs and manual test surface |
 
 CI (`.github/workflows/node.js.yml`) gates on: build, core tests with coverage, source tests, cells tests, downstream consumer projects (`test-projects/` — CRA5 and Next), and the full suite re-run against React 18 and 19. Keep all of these green.

@@ -98,10 +98,16 @@ The API documentation lives in [packages/core/API.md](packages/core/API.md). The
 
 # 🛠️ Development
 
-Requirements: Node 20.10+ (see [.nvmrc](.nvmrc)). Building additionally requires bash 4+ and `jq` — note that macOS ships bash 3.2, so `brew install bash jq` first.
+Requirements: Node 20.10+ (see [.nvmrc](.nvmrc)) — nothing else. All tooling runs through a Node CLI at [scripts/cli.mjs](scripts/cli.mjs), so there are no shell prerequisites on any platform.
 
 ```shell
 npm install
+```
+
+Build every package (ESM + CJS + extracted CSS into `dist/`):
+
+```shell
+npm run build
 ```
 
 Run the Storybook dev environment (the fastest way to see changes live):

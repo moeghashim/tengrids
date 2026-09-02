@@ -25,7 +25,7 @@
         "dist"
     ],
     "scripts": {
-        "build": "./build.sh",
+        "build": "node ../../scripts/cli.mjs build cells",
         "lint": "eslint src --ext .ts,.tsx",
         "test": "vitest"
     },

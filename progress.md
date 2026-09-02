@@ -63,6 +63,9 @@ Result: 194 lines of bash across 9 files replaced by one ~220-line Node CLI. Onl
 - [x] Committed + pushed rename, docs, llms.txt, Pages additions, test-project links, Playwright job + baselines.
 - [x] CI on `8c68173`: Build ✓ (consumer projects on `file:` links, React matrix), Visual regression ✓ (Docker baselines matched CI renders), Storybook deploy ✓.
 - [x] Pages site verified serving the agent docs: `llms.txt` (2.9 KB), `API.md` (81.6 KB), `llms-full.txt` (98.5 KB) — all HTTP 200 at https://moeghashim.github.io/tengrids/.
-- [ ] Publish to npm — blocked on `npm login` by the user (npm still E401 at last check). Order once logged in: `tengrids` first, then `tengrids-cells` and `tengrids-source` (they pin core's exact version).
+- [x] **Published to npm** (by the user from an interactive terminal — publishing needed a browser OTP): `tengrids@6.0.4-alpha25`, `tengrids-cells@6.0.4-alpha25`, `tengrids-source@6.0.4-alpha25`, all under `dist-tag latest` (`--tag latest` is mandatory for prerelease versions on npm 11). Clean-room `npm i tengrids tengrids-cells tengrids-source` in a scratch project: `DataEditor` loads, 59 exports, 13 `allCells` renderers, 5 source hooks, `dist/index.css` + ESM + types present.
+
+### AI-first follow-ups — DONE
+Result: agents can `npm i tengrids`; `llms.txt`/`API.md`/`llms-full.txt` are served from the Pages site; a Playwright job guards pixels on six stories with Linux-rendered baselines identical between local Docker and CI. Remaining follow-up: re-run `/design-sync` so the Claude Design bundle global moves from `GlideappsGlideDataGrid` to `Tengrids`.
 - [ ] Re-sync claude.ai/design (bundle global changes with the package name) — follow-up.
 - [ ] Re-sync claude.ai/design (bundle global changes with the package name) — follow-up.

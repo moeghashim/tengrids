@@ -2,15 +2,16 @@ name: Storybook Build and Deploy
 on:
     push:
         branches: ["main"]
-        paths: ["packages/core/**", "packages/cells/**", "packages/source/**"]
+        paths: ["packages/core/**", "packages/cells/**", "packages/source/**", ".github/workflows/storybook.js.yml"]
+    workflow_dispatch:
+permissions:
+    contents: write
 jobs:
     build-and-deploy:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout 🛎️
               uses: actions/checkout@v4
-              with:
-                  persist-credentials: false
             - uses: actions/setup-node@v4
               with:
                   node-version: 20.10.0
@@ -21,10 +22,9 @@ jobs:
             - name: "Add .nojekyll 📄"
               run: cd storybook-build && touch .nojekyll
             - name: Deploy 🚀
-              uses: JamesIves/github-pages-deploy-action@3.6.2
+              uses: JamesIves/github-pages-deploy-action@v4
               with:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  BRANCH: gh-pages
-                  FOLDER: storybook-build
-                  CLEAN: true
-                  TARGET_FOLDER: docs
+                  branch: gh-pages
+                  folder: storybook-build
+                  target-folder: docs
+                  clean: true

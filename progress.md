@@ -38,3 +38,10 @@ Running log of work on tengrids. Newest entries at the bottom; each entry is app
 
 ### Dev CLI — DONE
 Result: 194 lines of bash across 9 files replaced by one ~220-line Node CLI. Only prerequisite is Node. Build output byte-identical to the shell build for all JS/CSS/maps; `.d.ts` files gained their (previously lost) sourcemap trailers.
+
+## 2026-09-02
+
+### CI: Storybook Build and Deploy failing
+- Reported failing on `e0d6816`. Diagnosis: the main `Build` workflow passed (CLI works in CI); the Storybook job built fine but its Deploy step got `403 Permission denied to github-actions[bot]` pushing `gh-pages`. Inherited workflow never declared `contents: write`, and new repos default `GITHUB_TOKEN` to read-only. Same failure on `6e64447` — predates the CLI.
+- Fix: added `permissions: contents: write` to `.github/workflows/storybook.js.yml` and moved `JamesIves/github-pages-deploy-action` from 3.6.2 (2020) to v4 (lowercase inputs, token defaults to `GITHUB_TOKEN`).
+- Note: the branch push only publishes if GitHub Pages is enabled for the repo (source: `gh-pages` branch, `/docs` folder) — see the check below.

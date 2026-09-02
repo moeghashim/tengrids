@@ -2,6 +2,8 @@
 
 ## Re-sync risks
 
+- **2026-09-02 re-sync after the npm rename**: `cfg.pkg` is now `tengrids`, so the bundle global is `window.Tengrids` (was `GlideappsGlideDataGrid`); `conventions.md` was updated accordingly. The component group is derived from the story title (`Glide-Data-Grid/…`), NOT the package name, so upload paths stayed `components/glide-data-grid/DataEditor/` and no remote deletes were needed. The re-sync driver spot-checked DataEditor (pipeline churn + bundle change); the fresh sheet matched the recorded 12 `match` grades.
+- The reference storybook can be refreshed by copying the visual job's `storybook-build/` (same config) instead of rebuilding: `rm -rf .design-sync/sb-reference && cp -R storybook-build .design-sync/sb-reference`.
 - **Story-fixture randomness**: several demo stories generate cell values with unseeded randomness (Boolean cells, loading-skeleton widths in Built In Search / All Cell Kinds). Pixels differ on every capture on BOTH panels; component chrome is what was graded. A future recapture of these stories will again show value-level deltas — expected, not regressions.
 - **picsum.photos images**: mock data uses picsum URLs; loads are flaky/rate-limited during capture, so `[ASSETS_BLOCKED]` prints even with working egress (verified reachable via curl). Avatars/images load partially on both panels. Don't chase unless images fail on ONE panel only.
 - **Story cap**: DataEditor graded at `--max-stories 12` of 75 stories. The 63 tail stories are verified-by-upload only. Raise the cap if a specific tail demo (search overlays, million-row perf, custom cells) needs individual verification.

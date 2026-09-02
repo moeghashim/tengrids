@@ -69,3 +69,8 @@ Result: 194 lines of bash across 9 files replaced by one ~220-line Node CLI. Onl
 Result: agents can `npm i tengrids`; `llms.txt`/`API.md`/`llms-full.txt` are served from the Pages site; a Playwright job guards pixels on six stories with Linux-rendered baselines identical between local Docker and CI. Remaining follow-up: re-run `/design-sync` so the Claude Design bundle global moves from `GlideappsGlideDataGrid` to `Tengrids`.
 - [ ] Re-sync claude.ai/design (bundle global changes with the package name) — follow-up.
 - [ ] Re-sync claude.ai/design (bundle global changes with the package name) — follow-up.
+
+### Design-sync re-run after the npm rename + Docker cleanup
+- Quit Docker Desktop (started earlier only to render the Playwright baselines).
+- Re-sync of Claude Design project `83bf1f56-58a8-4aa4-b190-b3b6baf9a446` via the `resync.mjs` driver with the remote anchor: build → diff → validate → capture all green; DataEditor carried forward with a `[SPOT_CHECK]` (pipeline churn + bundle change) whose fresh sheet matched the recorded 12 `match` grades. Bundle global moved `GlideappsGlideDataGrid` → `Tengrids`; `conventions.md` updated to `window.Tengrids` (all cited names re-validated against the build). Component group derives from the story title, so paths stayed `components/glide-data-grid/DataEditor/` — no remote deletes.
+- Atomic upload (plan approved, deletes = none): sentinel → 11 content files → sentinel re-arm → `_ds_sync.json` last. Reference storybook refreshed by copying `storybook-build/` (same config) instead of rebuilding — noted in `.design-sync/NOTES.md`.

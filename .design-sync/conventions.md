@@ -25,7 +25,7 @@ The grid asks for cells: give it `columns` (`{title, id, width}`), `rows` (a cou
 ## Idiomatic example
 
 ```tsx
-const G = window.GlideappsGlideDataGrid;
+const G = window.Tengrids;
 const columns = [{ title: "Name", id: "name", width: 180 }, { title: "Score", id: "score", width: 90 }];
 const rows = data.length;
 const getCellContent = ([col, row]) => {

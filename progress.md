@@ -45,7 +45,7 @@ Result: 194 lines of bash across 9 files replaced by one ~220-line Node CLI. Onl
 - Reported failing on `e0d6816`. Diagnosis: the main `Build` workflow passed (CLI works in CI); the Storybook job built fine but its Deploy step got `403 Permission denied to github-actions[bot]` pushing `gh-pages`. Inherited workflow never declared `contents: write`, and new repos default `GITHUB_TOKEN` to read-only. Same failure on `6e64447` — predates the CLI.
 - Fix: added `permissions: contents: write` to `.github/workflows/storybook.js.yml` and moved `JamesIves/github-pages-deploy-action` from 3.6.2 (2020) to v4 (lowercase inputs, token defaults to `GITHUB_TOKEN`).
 - Also added `workflow_dispatch` and made the workflow trigger on edits to itself. Committed as `132d7ce`; the triggered run **succeeded** and created the `gh-pages` branch with the built Storybook under `docs/`.
-- GitHub Pages enabled via API at user's request (source `gh-pages` branch, `/docs` folder) → Storybook published at https://moeghashim.github.io/tengrids/.
+- GitHub Pages enabled via API at user's request (source `gh-pages` branch, `/docs` folder) → Storybook published at https://moeghashim.github.io/tengrids/. Verified live (HTTP 200, stories render in the browser). Only console noise: a 404 for `/vite-inject-mocker-entry.js`, Storybook 9's mocking shim requested at the domain root instead of the subpath — harmless, same as upstream's deployment.
 
 ### README: Developer CLI section
 - Added a "Developer CLI" section to README.md documenting `npm run cli -- <build|version|test|bootstrap>` with a command table, the no-shell-prerequisites guarantee, and which npm scripts delegate to it. Added the published Storybook URL.

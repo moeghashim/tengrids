@@ -1,0 +1,26 @@
+# tengrids
+
+> tengrids is a canvas-rendered React data grid for millions of rows with native scrolling, built-in editing, copy/paste, search, column groups, frozen columns/rows, and fully customizable cell rendering. It is a fork of Glide Data Grid by Glide (MIT), published on npm as `tengrids`.
+
+Install: `npm i tengrids` (peer deps: `react`, `react-dom` 16.12+ through 19; `lodash`, `marked`, `react-responsive-carousel`). Import the stylesheet once: `import "tengrids/dist/index.css"`. Companion packages: `tengrids-cells` (13 extra cell renderers: dropdown, sparkline, tags, date picker, multi-select, tree view, …) and `tengrids-source` (hooks: `useAsyncDataSource`, `useColumnSort`, `useUndoRedo`, `useCollapsingGroups`, `useMoveableColumns`).
+
+Mental model: the grid never holds your data. You give it `columns` (`{ title, id, width }`), a `rows` count, and `getCellContent([col, row]) => GridCell`; it asks for cells lazily as they scroll into view. Cell kinds come from `GridCellKind` (`Text`, `Number`, `Boolean`, `Uri`, `Image`, `Markdown`, `Bubble`, `Drilldown`, `RowID`, `Loading`, `Protected`, `Custom`). Editing: set `allowOverlay: true` on a cell and handle `onCellEdited`/`onCellsEdited`.
+
+Things that break silently if skipped: (1) `DataEditor` fills its parent — give the parent a real width and height, or pass `width`/`height`; (2) add `<div id="portal" style="position:fixed;top:0;left:0;z-index:9999" />` as the last child of `<body>` — cell editors mount into it; (3) styling is via the `theme` prop (a partial `Theme` object: `accentColor`, `bgCell`, `textDark`, `fontFamily`, `baseFontStyle`, `headerFontStyle`, …), never CSS classes — the cells are painted on canvas.
+
+## Docs
+
+- [API reference](https://moeghashim.github.io/tengrids/API.md): every prop, cell type, theme key, and imperative ref method for `DataEditor`.
+- [README](https://raw.githubusercontent.com/moeghashim/tengrids/main/README.md): quick start, package list, FAQ, development commands.
+- [AGENTS.md](https://raw.githubusercontent.com/moeghashim/tengrids/main/AGENTS.md): architecture map of the rendering pipeline and the gotchas that matter when changing the grid itself.
+- [Storybook](https://moeghashim.github.io/tengrids/): ~60 live examples; each story's source is the best usage reference for that feature.
+
+## Source
+
+- [GitHub repository](https://github.com/moeghashim/tengrids): npm-workspaces monorepo — `packages/core` (the grid), `packages/cells`, `packages/source`.
+- [Upstream: Glide Data Grid](https://github.com/glideapps/glide-data-grid): the original project this fork is based on.
+
+## Optional
+
+- [llms-full.txt](https://moeghashim.github.io/tengrids/llms-full.txt): README, API reference, and AGENTS.md concatenated into one file.
+- [Changelog](https://raw.githubusercontent.com/moeghashim/tengrids/main/packages/core/CHANGELOG.md): upstream release history up to the fork point.

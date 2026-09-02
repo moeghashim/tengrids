@@ -19,7 +19,10 @@
         "test-latest": "node scripts/cli.mjs test --react latest",
         "test-source": "cd packages/source && npm run test",
         "test-cells": "cd packages/cells && npm run test",
-        "test-projects": "node scripts/cli.mjs bootstrap"
+        "test-projects": "node scripts/cli.mjs bootstrap",
+        "visual": "playwright test",
+        "visual:update": "playwright test --update-snapshots",
+        "visual:docker": "docker run --rm --ipc=host -v \"$PWD\":/work -w /work mcr.microsoft.com/playwright:v1.62.1-noble npx playwright test"
     },
     "type": "commonjs",
     "author": "Glide",
@@ -39,6 +42,7 @@
         "@faker-js/faker": "^7.6.0",
         "@linaria/core": "^6.3.0",
         "@linaria/react": "^6.3.0",
+        "@playwright/test": "^1.62.1",
         "@storybook/addon-docs": "^9.1.2",
         "@storybook/addon-links": "^9.1.2",
         "@storybook/react-vite": "^9.1.2",

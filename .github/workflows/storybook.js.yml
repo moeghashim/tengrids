@@ -2,7 +2,7 @@ name: Storybook Build and Deploy
 on:
     push:
         branches: ["main"]
-        paths: ["packages/core/**", "packages/cells/**", "packages/source/**", ".github/workflows/storybook.js.yml"]
+        paths: ["packages/core/**", "packages/cells/**", "packages/source/**", "llms.txt", "README.md", "AGENTS.md", ".github/workflows/storybook.js.yml"]
     workflow_dispatch:
 permissions:
     contents: write
@@ -19,8 +19,11 @@ jobs:
               run: |
                   npm install
                   npm run build-storybook
-            - name: "Add .nojekyll 📄"
-              run: cd storybook-build && touch .nojekyll
+            - name: "Add .nojekyll + machine-readable docs 📄"
+              run: |
+                  cd storybook-build && touch .nojekyll && cd ..
+                  cp packages/core/API.md llms.txt storybook-build/
+                  { cat README.md; printf '\n\n---\n\n'; cat packages/core/API.md; printf '\n\n---\n\n'; cat AGENTS.md; } > storybook-build/llms-full.txt
             - name: Deploy 🚀
               uses: JamesIves/github-pages-deploy-action@v4
               with:

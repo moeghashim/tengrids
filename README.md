@@ -28,17 +28,25 @@ This fork tracks upstream v6.0.4-alpha25.
 
 # 📦 Packages
 
-This is an npm-workspaces monorepo. The packages currently retain their upstream names until this fork publishes under its own scope:
+This is an npm-workspaces monorepo publishing three packages to npm:
 
 | Package | Directory | What it is |
 | --- | --- | --- |
-| `@glideapps/glide-data-grid` | [`packages/core`](packages/core) | The grid itself |
-| `@glideapps/glide-data-grid-cells` | [`packages/cells`](packages/cells) | Extra cell renderers (dropdown, sparkline, tags, date picker, …) |
-| `@glideapps/glide-data-grid-source` | [`packages/source`](packages/source) | Data-source hooks (async loading, sorting, undo/redo, …) |
+| `tengrids` | [`packages/core`](packages/core) | The grid itself |
+| `tengrids-cells` | [`packages/cells`](packages/cells) | Extra cell renderers (dropdown, sparkline, tags, date picker, …) |
+| `tengrids-source` | [`packages/source`](packages/source) | Data-source hooks (async loading, sorting, undo/redo, …) |
 
 # ⚡ Quick Start
 
-Make sure you are using React 16 or greater (React 17, 18, and 19 are all supported).
+Make sure you are using React 16 or greater (React 17, 18, and 19 are all supported). Install the grid, plus its peer dependencies if you don't already have them:
+
+```shell
+npm i tengrids
+```
+
+```shell
+npm i lodash marked react-responsive-carousel
+```
 
 Create a new `DataEditor` wherever you need to display lots and lots of data:
 
@@ -49,7 +57,7 @@ Create a new `DataEditor` wherever you need to display lots and lots of data:
 Don't forget to import the mandatory CSS:
 
 ```ts
-import "@glideapps/glide-data-grid/dist/index.css";
+import "tengrids/dist/index.css";
 ```
 
 Making your columns is easy:

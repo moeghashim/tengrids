@@ -1,4 +1,4 @@
-import type { EditableGridCell, GridCell, GridSelection, Item, DataEditorRef } from "@glideapps/glide-data-grid";
+import type { EditableGridCell, GridCell, GridSelection, Item, DataEditorRef } from "tengrids";
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 

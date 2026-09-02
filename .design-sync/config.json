@@ -3,7 +3,7 @@
     "shape": "storybook",
     "storybookConfigDir": ".storybook",
     "storybookStatic": ".design-sync/sb-reference",
-    "pkg": "@glideapps/glide-data-grid",
+    "pkg": "tengrids",
     "buildCmd": "npm run build -w packages/core && npx cleancss -o packages/core/dist/index.flat.css packages/core/dist/index.css",
     "cssEntry": "dist/index.flat.css",
     "readmeHeader": ".design-sync/conventions.md",

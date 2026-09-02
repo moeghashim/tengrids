@@ -1,12 +1,14 @@
+> Part of [tengrids](https://github.com/moeghashim/tengrids), a fork of [Glide Data Grid](https://github.com/glideapps/glide-data-grid) by Glide (MIT). Install with `npm i tengrids-cells`; requires `tengrids` at the same version.
+
 <h1 align="center">
   <img src="https://raw.githubusercontent.com/glideapps/glide-data-grid/master/icon.png" width="224px"/><br/>
   <b>Glide Data Grid Cells</b>
 </h1>
 <p align="center">Additional cells and features for Glide Data Grid</p>
 
-[![Version](https://img.shields.io/npm/v/@glideapps/glide-data-grid-cells?color=blue&label=latest&style=for-the-badge)](https://github.com/glideapps/glide-data-grid/releases)
+[![Version](https://img.shields.io/npm/v/tengrids-cells?color=blue&label=latest&style=for-the-badge)](https://github.com/glideapps/glide-data-grid/releases)
 [![React 16+](https://img.shields.io/badge/React-16+-00ADD8?style=for-the-badge&logo=react)](https://reactjs.org)
-[![npm bundle size](https://img.shields.io/bundlephobia/minzip/@glideapps/glide-data-grid-cells?color=success&label=bundle&style=for-the-badge)](https://bundlephobia.com/package/@glideapps/glide-data-grid-cells)
+[![npm bundle size](https://img.shields.io/bundlephobia/minzip/tengrids-cells?color=success&label=bundle&style=for-the-badge)](https://bundlephobia.com/package/tengrids-cells)
 [![License](https://img.shields.io/github/license/glideapps/glide-data-grid?color=red&style=for-the-badge)](https://github.com/glideapps/glide-data-grid/blob/main/LICENSE)
 [![Made By Glide](https://img.shields.io/badge/❤_Made_by-Glide-11CCE5?style=for-the-badge&logo=none)](https://www.glideapps.com/jobs)
 
@@ -27,7 +29,7 @@ Current cells
 Step 1: Import the cell renderers you want to use and pass them to the grid.
 
 ```tsx
-import { allCells } from "@glideapps/glide-data-grid-cells";
+import { allCells } from "tengrids-cells";
 
 const Grid = () => {
     return <DataEditor customRenderers={allCells} {...rest} />;
@@ -37,7 +39,7 @@ const Grid = () => {
 Step 2: Use the cells in your `getCellContent` callback
 
 ```ts
-import type { StarCell } from "@glideapps/glide-data-grid-cells";
+import type { StarCell } from "tengrids-cells";
 
 const getCellContent = React.useCallback(() => {
     const starCell: StarCell = {

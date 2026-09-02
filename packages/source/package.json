@@ -1,5 +1,5 @@
 {
-    "name": "@glideapps/glide-data-grid-source",
+    "name": "tengrids-source",
     "version": "6.0.4-alpha25",
     "description": "Useful data source hooks for Glide Data Grid",
     "sideEffects": false,
@@ -23,10 +23,10 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/glideapps/glide-data-grid.git",
+        "url": "git+https://github.com/moeghashim/tengrids.git",
         "directory": "packages/source"
     },
-    "homepage": "https://github.com/glideapps/glide-data-grid/tree/main/packages/source",
+    "homepage": "https://github.com/moeghashim/tengrids/tree/main/packages/source",
     "author": "Glide",
     "license": "MIT",
     "keywords": [
@@ -42,7 +42,7 @@
         "canvas"
     ],
     "dependencies": {
-        "@glideapps/glide-data-grid": "6.0.4-alpha25"
+        "tengrids": "6.0.4-alpha25"
     },
     "peerDependencies": {
         "lodash": "^4.17.19",

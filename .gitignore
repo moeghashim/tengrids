@@ -16,3 +16,9 @@ gen-docs/
 .design-sync/node_modules
 .ds-sync/
 ds-bundle/
+
+# playwright visual regression
+playwright-report/
+test-results/
+storybook-build/
+.design-sync/*.log

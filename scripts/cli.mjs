@@ -11,13 +11,13 @@
 // and the documented `npm run ...` commands are unchanged.
 
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const PACKAGES = ["core", "cells", "source"];
-const CORE_PKG = "@glideapps/glide-data-grid";
+const CORE_PKG = "tengrids";
 const BANNER = { core: "Glide Data Grid", cells: "Glide Data Grid Cells", source: "Glide Data Grid Source" };
 const cyan = s => `[0;36m${s}[0m`;
 
@@ -188,9 +188,9 @@ async function bootstrap() {
     for (const name of ["next-gdg", "cra5-gdg"]) {
         const dir = join(REPO_ROOT, "test-projects", name);
         await run(npm, ["ci"], { cwd: dir });
-        const link = join(dir, "node_modules", "@glideapps", "glide-data-grid");
+        const link = join(dir, "node_modules", ...CORE_PKG.split("/"));
         rmSync(link, { recursive: true, force: true });
-        symlinkSync("../../../../packages/core/", link, process.platform === "win32" ? "junction" : "dir");
+        symlinkSync(relative(dirname(link), join(REPO_ROOT, "packages", "core")), link, process.platform === "win32" ? "junction" : "dir");
         console.log(`${name}: linked ${CORE_PKG} → packages/core`);
     }
 }

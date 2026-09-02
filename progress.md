@@ -49,3 +49,18 @@ Result: 194 lines of bash across 9 files replaced by one ~220-line Node CLI. Onl
 
 ### README: Developer CLI section
 - Added a "Developer CLI" section to README.md documenting `npm run cli -- <build|version|test|bootstrap>` with a command table, the no-shell-prerequisites guarantee, and which npm scripts delegate to it. Added the published Storybook URL.
+
+### AI-first follow-ups: package rename + publish, API.md/llms.txt on Pages, Playwright visual job — IN PROGRESS
+- [x] Renamed packages: `tengrids` → `tengrids`, `-cells` → `tengrids-cells`, `-source` → `tengrids-source` (all three names free on npm). Bulk sed across src/tests/READMEs/package.json/test-projects/CLI; repo/homepage/bugs URLs point at moeghashim/tengrids and the Pages site. CHANGELOG left as historical record.
+- [x] Wrote root `llms.txt` (llmstxt.org format); Pages workflow now copies `API.md`, `llms.txt`, and a generated `llms-full.txt` (README + API + AGENTS) into the site root, and triggers on edits to those docs.
+- [x] Replaced `packages/core/README.md` (the npm page) with a fork README; prepended a fork/install note to cells + source READMEs.
+- [x] First rename attempt silently no-op'd (zsh doesn't word-split unquoted `$FILES`); redone with a `while read` loop. Root lock regenerated: 0 old-name refs, `node_modules/tengrids{,-cells,-source}` link to the workspaces, `require("tengrids")` loads 59 exports.
+- [x] Built all packages via CLI; suites green after rename: core 387/387, source 7/7, cells 64/64. Static Storybook builds (12 MB).
+- [x] `test-projects/*` now depend on core via `file:../../packages/core` (their locks regenerated, `npm ci` links `node_modules/tengrids -> ../../../packages/core`) — no dependence on the registry, and the CLI `bootstrap` symlink target is now computed rather than hardcoded to the old scoped path depth.
+- [x] Playwright visual job: `playwright.config.ts` (platform-agnostic snapshot names, Storybook served from `storybook-build/` via http-server), `visual/stories.spec.ts` (6 faker-seeded stories; picsum avatars blocked for stable pixels), `.github/workflows/visual.yml` (runs in `mcr.microsoft.com/playwright:v1.62.1-noble`; `update_snapshots` dispatch input regenerates + commits baselines), npm scripts `visual`, `visual:update`, `visual:docker`. AGENTS.md gotcha 4 rewritten accordingly.
+- [x] Baselines generated inside `mcr.microsoft.com/playwright:v1.62.1-noble` (Docker Desktop had to be started first): 6 PNGs in `visual/__snapshots__`. Second run against them: 6/6 pass — rendering is deterministic.
+- [x] `npm pack --dry-run` reviewed: core ships API.md, CHANGELOG, LICENSE, README, dist/ (no src/tests); cells/source ship LICENSE, README, dist/. Lint clean across workspaces (0 errors).
+- [x] Committed + pushed rename, docs, llms.txt, Pages additions, test-project links, Playwright job + baselines.
+- [ ] Publish to npm (blocked on `npm login` by the user), core first.
+- [ ] Re-sync claude.ai/design (bundle global changes with the package name) — follow-up.
+- [ ] Re-sync claude.ai/design (bundle global changes with the package name) — follow-up.

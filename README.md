@@ -116,11 +116,31 @@ Run the Storybook dev environment (the fastest way to see changes live):
 npm start
 ```
 
+A published build of this fork's Storybook is deployed automatically from `main` at **https://moeghashim.github.io/tengrids/**.
+
 Run the tests:
 
 ```shell
 npm test
 ```
+
+## Developer CLI
+
+All repository tooling is a single Node script, [scripts/cli.mjs](scripts/cli.mjs) — there is no bash, `jq`, or other shell dependency, and it works on macOS, Linux, and Windows. Invoke it through npm:
+
+```shell
+npm run cli -- help
+```
+
+| Command | What it does |
+| --- | --- |
+| `npm run cli -- build core cells source` (or `--all`) | Compiles ESM + CJS with `tsc`, extracts linaria CSS, and writes each package's `dist/` (core is built first; the others in parallel) |
+| `npm run cli -- version 6.1.0` | Sets the version in the root and every workspace package and pins the workspace dependency on core (also runs as the npm `version` lifecycle hook) |
+| `npm run cli -- test` | Runs the core test suite once (`vitest run`; extra args pass through) |
+| `npm run cli -- test --react 18` | Temporarily installs another React (`18`, `19`, or `latest`), runs the suite, then restores `package.json` and the lockfile. Add `--no-restore` to keep the swap; restore is skipped automatically in CI |
+| `npm run cli -- bootstrap` | Installs the downstream consumer projects in `test-projects/` and links core into them |
+
+The familiar npm scripts (`npm run build`, `npm run test-18`, `npm run test-19`, `npm run test-latest`, `npm run test-projects`) delegate to these commands, so CI and existing habits keep working.
 
 See [AGENTS.md](AGENTS.md) for a full map of the codebase, all build/test commands, and the gotchas that matter when making changes.
 

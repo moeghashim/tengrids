@@ -1,0 +1,58 @@
+{
+    "name": "tengrids-ai",
+    "version": "6.0.4-alpha25",
+    "description": "AI features for tengrids: AI formula cells, natural-language search and filter, agent-fed data sources, smart paste, and bulk edits — bring your own model",
+    "sideEffects": false,
+    "type": "module",
+    "browser": "dist/esm/index.js",
+    "main": "dist/cjs/index.js",
+    "module": "dist/esm/index.js",
+    "types": "dist/dts/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/dts/index.d.ts",
+            "import": "./dist/esm/index.js",
+            "require": "./dist/cjs/index.js"
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "node ../../scripts/cli.mjs build ai",
+        "lint": "eslint src --ext .ts,.tsx",
+        "test": "vitest"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/moeghashim/tengrids.git",
+        "directory": "packages/ai"
+    },
+    "homepage": "https://github.com/moeghashim/tengrids/tree/main/packages/ai",
+    "author": "Moe Ghashim",
+    "license": "MIT",
+    "keywords": [
+        "react",
+        "datagrid",
+        "data-grid",
+        "ai",
+        "llm",
+        "agent",
+        "natural-language",
+        "canvas"
+    ],
+    "dependencies": {
+        "tengrids": "6.0.4-alpha25"
+    },
+    "peerDependencies": {
+        "react": "^16.12.0 || 17.x || 18.x || 19.x",
+        "react-dom": "^16.12.0 || 17.x || 18.x || 19.x"
+    },
+    "devDependencies": {
+        "eslint": "^8.57.1",
+        "eslint-plugin-import": "^2.31.0",
+        "eslint-plugin-react": "^7.37.5",
+        "eslint-plugin-react-hooks": "^5.2.0",
+        "typescript": "^5.8.3"
+    }
+}

@@ -16,6 +16,7 @@
   - `TestCases`, `Bugs` — regression-test stories, not design surface.
   - `Cells` — lives in the separate `@glideapps/glide-data-grid-cells` package (not in the core bundle). Candidate for a future sync enhancement via `extraEntries` + cells dist build.
   - `Source` — hooks demos from `@glideapps/glide-data-grid-source`, non-visual.
+  - `AI` — `tengrids-ai` feature demos (AI cells, NL search/filter, agent source, smart paste, bulk edit); they compose `DataEditor` with mock providers and are not standalone components. Candidate for a future sync if the AI cell should appear in Claude Design.
 - [GENERAL] Core dist CSS is an `@import`-tree stub (`packages/core/dist/index.css`); converter needs a flat file → `buildCmd` appends a `cleancss` flatten step (repo's own devDependency) producing `packages/core/dist/index.flat.css`, wired via `cfg.cssEntry`.
 - [GENERAL] Build is a Node CLI (`scripts/cli.mjs build core`, via `npm run build -w packages/core`) — no bash/jq prerequisites (the former bash-4 build scripts were removed 2026-09-01).
 - `.storybook/preview.ts` has no decorators — no `cfg.provider` needed.

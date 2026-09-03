@@ -16,9 +16,9 @@ import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const PACKAGES = ["core", "cells", "source"];
+const PACKAGES = ["core", "cells", "source", "ai"];
 const CORE_PKG = "tengrids";
-const BANNER = { core: "Glide Data Grid", cells: "Glide Data Grid Cells", source: "Glide Data Grid Source" };
+const BANNER = { core: "Glide Data Grid", cells: "Glide Data Grid Cells", source: "Glide Data Grid Source", ai: "tengrids AI" };
 const cyan = s => `[0;36m${s}[0m`;
 
 // ---------------------------------------------------------------- helpers
@@ -118,7 +118,7 @@ async function build(args) {
     const all = args.includes("--all");
     const names = all ? PACKAGES : args.filter(a => !a.startsWith("-"));
     if (names.length === 0) throw new Error("build: specify packages (core, cells, source) or --all");
-    // cells and source compile against core's dist, so core goes first.
+    // cells, source, and ai compile against core's dist, so core goes first.
     if (names.includes("core")) await buildPackage("core");
     await Promise.all(names.filter(n => n !== "core").map(buildPackage));
 }

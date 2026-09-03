@@ -19,6 +19,7 @@
         "test-latest": "node scripts/cli.mjs test --react latest",
         "test-source": "cd packages/source && npm run test",
         "test-cells": "cd packages/cells && npm run test",
+        "test-ai": "cd packages/ai && npm run test",
         "test-projects": "node scripts/cli.mjs bootstrap",
         "visual": "playwright test",
         "visual:update": "playwright test --update-snapshots",
@@ -30,7 +31,8 @@
     "workspaces": [
         "./packages/core",
         "./packages/cells",
-        "./packages/source"
+        "./packages/source",
+        "./packages/ai"
     ],
     "devDependencies": {
         "@babel/cli": "^7.27.2",

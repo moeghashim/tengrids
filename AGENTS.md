@@ -5,7 +5,7 @@ tengrids is a fork of [glideapps/glide-data-grid](https://github.com/glideapps/g
 ## Environment
 
 - **Node 20.10+** (pinned in `.nvmrc`; newer versions work — the suite passes on Node 24). That is the only prerequisite: all build/version/test-matrix tooling is a Node CLI at `scripts/cli.mjs` (no bash, no jq, works on Windows).
-- `packages/cells` and `packages/source` tests import core's **built** `dist/` — build core first (`npm run build -w packages/core`) or their suites fail to resolve `tengrids`.
+- `packages/cells`, `packages/source`, and `packages/ai` tests import core's **built** `dist/` — build core first (`npm run build -w packages/core`) or their suites fail to resolve `tengrids`.
 - The devcontainer config is stale (Node 14) — don't trust it; use `.nvmrc`.
 
 ## Commands
@@ -17,7 +17,7 @@ All from the repo root unless noted:
 | Install | `npm install` | npm workspaces monorepo |
 | Core tests | `npm test` | 28 files / ~390 tests, ~10 s. Runs vitest in `packages/core` |
 | Single test file | `cd packages/core && npx vitest run test/copy-paste.test.ts` | |
-| Cells / source tests | `npm run test-cells` / `npm run test-source` | |
+| Cells / source / ai tests | `npm run test-cells` / `npm run test-source` / `npm run test-ai` | ai: 106 tests, ~1 s |
 | React matrix | `npm run test-18` / `test-19` / `test-latest` | Swaps the installed React, runs core tests, then restores package.json + reinstalls (skipped in CI; `--no-restore` keeps the swap) |
 | Lint + cycle check | `npm run lint -w packages/core` | eslint + `ts-helper -c` dependency-cycle check |
 | Build all | `npm run build` | tsc ESM+CJS in parallel, linaria CSS extraction, `dist/index.css` — then lint. Per package: `npm run build -w packages/core` |
@@ -27,13 +27,14 @@ All from the repo root unless noted:
 | Storybook | `npm start` | Port 9009; ~60 examples double as the docs and manual test surface |
 | Visual regression | `npx storybook build -o storybook-build && npm run visual:docker` | Screenshots 6 stories inside the Playwright Docker image and diffs them against `visual/__snapshots__` (see gotcha 4) |
 
-CI gates on (`node.js.yml`): build, core tests with coverage, source tests, cells tests, downstream consumer projects (`test-projects/` — CRA5 and Next, which depend on core via `file:` links), and the full suite re-run against React 18, 19, and latest. `visual.yml` runs the screenshot job; `storybook.js.yml` deploys Storybook plus `API.md`, `llms.txt`, and `llms-full.txt` to GitHub Pages (https://moeghashim.github.io/tengrids/). Keep all of these green.
+CI gates on (`node.js.yml`): build, core tests with coverage, source tests, cells tests, ai tests, downstream consumer projects (`test-projects/` — CRA5 and Next, which depend on core via `file:` links), and the full suite re-run against React 18, 19, and latest. `visual.yml` runs the screenshot job; `storybook.js.yml` deploys Storybook plus `API.md`, `llms.txt`, and `llms-full.txt` to GitHub Pages (https://moeghashim.github.io/tengrids/). Keep all of these green.
 
 ## Repo layout
 
 - `packages/core` — the grid (`tengrids`, ~32k lines). Everything below is about this package.
 - `packages/cells` — 13 optional `CustomRenderer` cells built on the public API. New cell types go here, not in core.
 - `packages/source` — hooks returning partial `DataEditorProps`: `useAsyncDataSource`, `useColumnSort`, `useUndoRedo`, `useCollapsingGroups`, `useMoveableColumns`.
+- `packages/ai` — `tengrids-ai`: bring-your-own-model AI features (`AiProvider` seam + `AiScheduler`; `useAiCells`/`AiCellRenderer`, `useNaturalLanguageSearch`/`useNaturalLanguageFilter` via a query→FilterSpec compiler, `useAgentDataSource`, `useSmartPaste`/`coerceValue`, `useBulkEdit`). Pure hooks + one custom cell; no vendor SDKs, no linaria. Tests use `createMockProvider` with fake timers.
 
 ## Architecture map (packages/core/src)
 
@@ -81,5 +82,5 @@ Cell system: cells are data objects (`GridCellKind.*` in `internal/data-grid/dat
 
 ## Fork notes
 
-- Packages are published on npm as `tengrids` (core), `tengrids-cells`, and `tengrids-source` — renamed from upstream's `@glideapps/glide-data-grid*`. `cells` and `source` pin the exact core version, so bump all three together with `npm run cli -- version <v>` and publish core first.
+- Packages are published on npm as `tengrids` (core), `tengrids-cells`, `tengrids-source`, and `tengrids-ai` (fork-original) — the first three renamed from upstream's `@glideapps/glide-data-grid*`. `cells` and `source` pin the exact core version, so bump all three together with `npm run cli -- version <v>` and publish core first.
 - The MIT license and Glide's copyright notice in `LICENSE` must be retained.

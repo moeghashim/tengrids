@@ -51,7 +51,7 @@ Result: 194 lines of bash across 9 files replaced by one ~220-line Node CLI. Onl
 - Added a "Developer CLI" section to README.md documenting `npm run cli -- <build|version|test|bootstrap>` with a command table, the no-shell-prerequisites guarantee, and which npm scripts delegate to it. Added the published Storybook URL.
 
 ### AI-first follow-ups: package rename + publish, API.md/llms.txt on Pages, Playwright visual job — IN PROGRESS
-- [x] Renamed packages: `tengrids` → `tengrids`, `-cells` → `tengrids-cells`, `-source` → `tengrids-source` (all three names free on npm). Bulk sed across src/tests/READMEs/package.json/test-projects/CLI; repo/homepage/bugs URLs point at moeghashim/tengrids and the Pages site. CHANGELOG left as historical record.
+- [x] Renamed packages: `@glideapps/glide-data-grid` → `tengrids`, `-cells` → `tengrids-cells`, `-source` → `tengrids-source` (all three names free on npm). Bulk sed across src/tests/READMEs/package.json/test-projects/CLI; repo/homepage/bugs URLs point at moeghashim/tengrids and the Pages site. CHANGELOG left as historical record.
 - [x] Wrote root `llms.txt` (llmstxt.org format); Pages workflow now copies `API.md`, `llms.txt`, and a generated `llms-full.txt` (README + API + AGENTS) into the site root, and triggers on edits to those docs.
 - [x] Replaced `packages/core/README.md` (the npm page) with a fork README; prepended a fork/install note to cells + source READMEs.
 - [x] First rename attempt silently no-op'd (zsh doesn't word-split unquoted `$FILES`); redone with a `while read` loop. Root lock regenerated: 0 old-name refs, `node_modules/tengrids{,-cells,-source}` link to the workspaces, `require("tengrids")` loads 59 exports.
@@ -74,3 +74,19 @@ Result: agents can `npm i tengrids`; `llms.txt`/`API.md`/`llms-full.txt` are ser
 - Quit Docker Desktop (started earlier only to render the Playwright baselines).
 - Re-sync of Claude Design project `83bf1f56-58a8-4aa4-b190-b3b6baf9a446` via the `resync.mjs` driver with the remote anchor: build → diff → validate → capture all green; DataEditor carried forward with a `[SPOT_CHECK]` (pipeline churn + bundle change) whose fresh sheet matched the recorded 12 `match` grades. Bundle global moved `GlideappsGlideDataGrid` → `Tengrids`; `conventions.md` updated to `window.Tengrids` (all cited names re-validated against the build). Component group derives from the story title, so paths stayed `components/glide-data-grid/DataEditor/` — no remote deletes.
 - Atomic upload (plan approved, deletes = none): sentinel → 11 content files → sentinel re-arm → `_ds_sync.json` last. Reference storybook refreshed by copying `storybook-build/` (same config) instead of rebuilding — noted in `.design-sync/NOTES.md`.
+
+## 2026-09-03
+
+### tengrids-ai — five AI product features — IN PROGRESS
+- [x] New workspace `packages/ai` (`tengrids-ai`, pins core exact version; no vendor SDKs, no linaria). Wired into root workspaces, CLI `build ai`, `npm run test-ai`, and the CI Build job.
+- [x] Provider seam (`AiProvider`, `collectCompletion`, `createMockProvider` with streaming + fake-timer delays) and `AiScheduler` (dedupe in flight, LRU cache, concurrency cap, priority, cancel by key/predicate, `prime`, `clearKey`).
+- [x] Feature 1 — AI cells: `AiCellRenderer` (idle formula / animated pending / streaming / done / error states, overlay editor with Regenerate, paste sets prompt, delete clears), `useAiCells` (row-template resolution `{Column}`, visible-region-only generation with cancellation, cache by resolved prompt, damage-API repaint, `run`/`regenerate`).
+- [x] Feature 2 — NL search/filter: `nl-query.ts` query→`FilterSpec` compiler contract (13 ops, aliases, numeric/date compare, and/or), `useCompiledQuery` (instant literal path, debounced compile, spec cache, abort on supersede, literal fallback on failure), `useNaturalLanguageSearch` (spreads onto the built-in search box) and `useNaturalLanguageFilter` (row permutation like `useColumnSort`).
+- [x] Feature 3 — `useAgentDataSource`: async-iterable rows with batched flushes, start/stop/reset/appendRows, sync + async `onEdited` round-trips.
+- [x] Feature 4 — smart paste: deterministic `coerceValue` (`parseNumber` handles "1,234.5", "$1.2k", "(500)", "12%", "3 million", word numbers; `parseBoolean`; `normalizeUri`) + `useSmartPaste` (sync coercion via `coercePasteValue`, unresolved cells batched to the model through the `onPaste` prop and corrected via `onCellsEdited`).
+- [x] Feature 5 — `useBulkEdit`: selection → scope (rows/ranges/whole columns), capped prompt with row JSON, model edits validated (scope, column, coercion, unchanged skipped), `highlightRegions` preview, `apply`/`discard`.
+- [x] Tests: 11 files / 106 tests, all green with fake timers and mock providers; strict `tsc` build clean; eslint clean after fixing 3 findings.
+- [x] Storybook demos (Extra Packages → AI): AiCells, NaturalLanguageSearch, NaturalLanguageFilter, AgentDataSource, SmartPaste, BulkEdit — all driven by mock providers. Package README written; root README gained an "AI features" section; AGENTS.md/llms.txt updated; design-sync titleMap excludes the new `AI` title with a note.
+- [x] Full `npm run build` (all four workspaces + lint) green locally; committed and pushed as "Add tengrids-ai: five bring-your-own-model AI features".
+- [ ] CI green on the push.
+- [ ] Publish `tengrids-ai` (needs the user's npm OTP).

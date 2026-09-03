@@ -28,13 +28,14 @@ This fork tracks upstream v6.0.4-alpha25.
 
 # 📦 Packages
 
-This is an npm-workspaces monorepo publishing three packages to npm:
+This is an npm-workspaces monorepo publishing four packages to npm:
 
 | Package | Directory | What it is |
 | --- | --- | --- |
 | `tengrids` | [`packages/core`](packages/core) | The grid itself |
 | `tengrids-cells` | [`packages/cells`](packages/cells) | Extra cell renderers (dropdown, sparkline, tags, date picker, …) |
 | `tengrids-source` | [`packages/source`](packages/source) | Data-source hooks (async loading, sorting, undo/redo, …) |
+| `tengrids-ai` | [`packages/ai`](packages/ai) | AI features, bring your own model: AI formula cells, natural-language search/filter, agent-fed data source, smart paste, bulk edit |
 
 # ⚡ Quick Start
 
@@ -103,6 +104,25 @@ The grid also requires a `<div id="portal" />` near the end of your document bod
 ## Full API documentation
 
 The API documentation lives in [packages/core/API.md](packages/core/API.md). The upstream project also hosts a rendered version at [docs.grid.glideapps.com](https://docs.grid.glideapps.com/).
+
+# 🤖 AI features (`tengrids-ai`)
+
+`tengrids-ai` adds five model-powered capabilities on top of the grid without putting any vendor SDK in it — you implement one `AiProvider` interface (a `complete(prompt, { signal })` function that returns a string or streams chunks) and every feature routes through it. A `createMockProvider` ships for tests, Storybook, and offline demos.
+
+| Feature | Hook | In one sentence |
+| --- | --- | --- |
+| AI cells | `useAiCells` + `aiCell()` | The spreadsheet `=AI()` formula: a cell's prompt references its row (`"Summarize {Notes} for {Name}"`), generates only when visible, streams, caches, and is editable in the overlay. |
+| Natural-language search | `useNaturalLanguageSearch` | Drives the built-in search box — literal matches instantly, then the model compiles the query into a structured filter that runs locally over every row. |
+| Natural-language filter | `useNaturalLanguageFilter` | The same compiler applied as a row permutation, so non-matching rows disappear. |
+| Agent-fed data source | `useAgentDataSource` | Rows stream in from an async iterable (an agent, a parser, a crawl) with batched re-renders; edits flow back to the agent. |
+| Smart paste | `useSmartPaste` | Pasted text is coerced into the column's kind deterministically (`"$1.2k"`, `"twelve"`, `"yes"`, `"example.com"`); the rest goes to the model in one batched call. |
+| Bulk edit | `useBulkEdit` | "Mark the selected rows as shipped" → proposed edits are previewed as highlights and only written on `apply()`. |
+
+```shell
+npm i tengrids tengrids-ai
+```
+
+Cost and privacy are designed in: the scheduler deduplicates and caches prompts, caps concurrency, and cancels work for rows that scroll away; search sends the model column names and a few sample values, never the table; bulk edit refuses oversized selections. See [packages/ai/README.md](packages/ai/README.md) for the provider contract and per-feature examples, and the live demos under **Extra Packages → AI** in the [Storybook](https://moeghashim.github.io/tengrids/).
 
 # 🛠️ Development
 

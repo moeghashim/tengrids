@@ -2,7 +2,7 @@
 
 > tengrids is a canvas-rendered React data grid for millions of rows with native scrolling, built-in editing, copy/paste, search, column groups, frozen columns/rows, and fully customizable cell rendering. It is a fork of Glide Data Grid by Glide (MIT), published on npm as `tengrids`.
 
-Install: `npm i tengrids` (peer deps: `react`, `react-dom` 16.12+ through 19; `lodash`, `marked`, `react-responsive-carousel`). Import the stylesheet once: `import "tengrids/dist/index.css"`. Companion packages: `tengrids-cells` (13 extra cell renderers: dropdown, sparkline, tags, date picker, multi-select, tree view, …) and `tengrids-source` (hooks: `useAsyncDataSource`, `useColumnSort`, `useUndoRedo`, `useCollapsingGroups`, `useMoveableColumns`).
+Install: `npm i tengrids` (peer deps: `react`, `react-dom` 16.12+ through 19; `lodash`, `marked`, `react-responsive-carousel`). Import the stylesheet once: `import "tengrids/dist/index.css"`. Companion packages: `tengrids-cells` (13 extra cell renderers: dropdown, sparkline, tags, date picker, multi-select, tree view, …) `tengrids-source` (hooks: `useAsyncDataSource`, `useColumnSort`, `useUndoRedo`, `useCollapsingGroups`, `useMoveableColumns`), and `tengrids-ai` (bring-your-own-model AI: `useAiCells` formula cells, `useNaturalLanguageSearch`/`useNaturalLanguageFilter`, `useAgentDataSource`, `useSmartPaste`, `useBulkEdit` — implement one `AiProvider.complete(prompt, {signal})` function and every feature works).
 
 Mental model: the grid never holds your data. You give it `columns` (`{ title, id, width }`), a `rows` count, and `getCellContent([col, row]) => GridCell`; it asks for cells lazily as they scroll into view. Cell kinds come from `GridCellKind` (`Text`, `Number`, `Boolean`, `Uri`, `Image`, `Markdown`, `Bubble`, `Drilldown`, `RowID`, `Loading`, `Protected`, `Custom`). Editing: set `allowOverlay: true` on a cell and handle `onCellEdited`/`onCellsEdited`.
 
@@ -12,6 +12,7 @@ Things that break silently if skipped: (1) `DataEditor` fills its parent — giv
 
 - [API reference](https://moeghashim.github.io/tengrids/API.md): every prop, cell type, theme key, and imperative ref method for `DataEditor`.
 - [README](https://raw.githubusercontent.com/moeghashim/tengrids/main/README.md): quick start, package list, FAQ, development commands.
+- [tengrids-ai README](https://raw.githubusercontent.com/moeghashim/tengrids/main/packages/ai/README.md): the AI provider contract and per-feature examples.
 - [AGENTS.md](https://raw.githubusercontent.com/moeghashim/tengrids/main/AGENTS.md): architecture map of the rendering pipeline and the gotchas that matter when changing the grid itself.
 - [Storybook](https://moeghashim.github.io/tengrids/): ~60 live examples; each story's source is the best usage reference for that feature.
 

@@ -77,6 +77,13 @@ export const AiCells: React.FC = () => {
     );
     const gridRef = React.useRef<DataEditorRef | null>(null);
     const ai = useAiCells({ provider, columns, getCellContent: baseGetCellContent, gridRef, concurrency: 3 });
+    // The grid repaints finished cells through the damage API without re-rendering this component,
+    // so poll the counters for the caption.
+    const [, tick] = React.useReducer((x: number) => x + 1, 0);
+    React.useEffect(() => {
+        const t = setInterval(tick, 500);
+        return () => clearInterval(t);
+    }, []);
     return (
         <Frame
             title="AI cells — =AI() formulas"

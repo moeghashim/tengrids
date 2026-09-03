@@ -88,5 +88,6 @@ Result: agents can `npm i tengrids`; `llms.txt`/`API.md`/`llms-full.txt` are ser
 - [x] Tests: 11 files / 106 tests, all green with fake timers and mock providers; strict `tsc` build clean; eslint clean after fixing 3 findings.
 - [x] Storybook demos (Extra Packages → AI): AiCells, NaturalLanguageSearch, NaturalLanguageFilter, AgentDataSource, SmartPaste, BulkEdit — all driven by mock providers. Package README written; root README gained an "AI features" section; AGENTS.md/llms.txt updated; design-sync titleMap excludes the new `AI` title with a note.
 - [x] Full `npm run build` (all four workspaces + lint) green locally; committed and pushed as "Add tengrids-ai: five bring-your-own-model AI features".
-- [ ] CI green on the push.
+- [x] CI green on `33747b7`: Build (incl. `npm run test-ai`) ✓, Visual regression ✓, Storybook deploy ✓.
+- [x] Live verification in the Storybook dev server: the AI-cells demo appeared stuck in "pending" — instrumented the hook and traced it to the browser pane's tab being `document.hidden` (Chromium throttles timers to 1 Hz there: a 30 ms `setTimeout` measured 1000 ms). Given 30 s the demo completed with every visible cell generated and repainted via `gridRef.updateCells`; not a product defect. Instrumentation removed; the demo caption now polls its counters (it never re-rendered because damage repaints bypass React).
 - [ ] Publish `tengrids-ai` (needs the user's npm OTP).

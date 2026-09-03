@@ -90,4 +90,5 @@ Result: agents can `npm i tengrids`; `llms.txt`/`API.md`/`llms-full.txt` are ser
 - [x] Full `npm run build` (all four workspaces + lint) green locally; committed and pushed as "Add tengrids-ai: five bring-your-own-model AI features".
 - [x] CI green on `33747b7`: Build (incl. `npm run test-ai`) ✓, Visual regression ✓, Storybook deploy ✓.
 - [x] Live verification in the Storybook dev server: the AI-cells demo appeared stuck in "pending" — instrumented the hook and traced it to the browser pane's tab being `document.hidden` (Chromium throttles timers to 1 Hz there: a 30 ms `setTimeout` measured 1000 ms). Given 30 s the demo completed with every visible cell generated and repainted via `gridRef.updateCells`; not a product defect. Instrumentation removed; the demo caption now polls its counters (it never re-rendered because damage repaints bypass React).
-- [ ] Publish `tengrids-ai` (needs the user's npm OTP).
+- [x] CI green on the follow-up `4bc3989` (Build, Visual). Storybook deploy workflow now also triggers on `packages/ai/**` so AI demo changes redeploy to Pages.
+- [ ] Publish `tengrids-ai` — the user's first attempt hit E404 because the npm session had expired (`npm whoami` → E401; the registry returns 404 for unauthenticated PUTs to unpublished names). Needs `npm login` then `npm publish --tag latest -w packages/ai`.

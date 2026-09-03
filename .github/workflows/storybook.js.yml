@@ -2,7 +2,7 @@ name: Storybook Build and Deploy
 on:
     push:
         branches: ["main"]
-        paths: ["packages/core/**", "packages/cells/**", "packages/source/**", "llms.txt", "README.md", "AGENTS.md", ".github/workflows/storybook.js.yml"]
+        paths: ["packages/core/**", "packages/cells/**", "packages/source/**", "packages/ai/**", "llms.txt", "README.md", "AGENTS.md", ".github/workflows/storybook.js.yml"]
     workflow_dispatch:
 permissions:
     contents: write

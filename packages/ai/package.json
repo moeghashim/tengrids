@@ -1,6 +1,6 @@
 {
     "name": "tengrids-ai",
-    "version": "6.0.4-alpha25",
+    "version": "6.0.4-alpha26",
     "description": "AI features for tengrids: AI formula cells, natural-language search and filter, agent-fed data sources, smart paste, and bulk edits — bring your own model",
     "sideEffects": false,
     "type": "module",
@@ -42,7 +42,7 @@
         "canvas"
     ],
     "dependencies": {
-        "tengrids": "6.0.4-alpha25"
+        "tengrids": "6.0.4-alpha26"
     },
     "peerDependencies": {
         "react": "^16.12.0 || 17.x || 18.x || 19.x",

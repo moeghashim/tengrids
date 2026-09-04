@@ -1,6 +1,6 @@
 {
     "name": "tengrids-source",
-    "version": "6.0.4-alpha25",
+    "version": "6.0.4-alpha26",
     "description": "Useful data source hooks for Glide Data Grid",
     "sideEffects": false,
     "type": "module",
@@ -42,7 +42,7 @@
         "canvas"
     ],
     "dependencies": {
-        "tengrids": "6.0.4-alpha25"
+        "tengrids": "6.0.4-alpha26"
     },
     "peerDependencies": {
         "lodash": "^4.17.19",

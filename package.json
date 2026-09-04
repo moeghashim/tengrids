@@ -1,6 +1,6 @@
 {
     "name": "tengrids",
-    "version": "6.0.4-alpha25",
+    "version": "6.0.4-alpha26",
     "scripts": {
         "start": "npm run storybook",
         "version": "node scripts/cli.mjs version",

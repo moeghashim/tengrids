@@ -103,3 +103,10 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 - 3 new tests (emit-once semantics, persisted trust + primed cache, regenerate precedence) → 109/109. Demo now persists results into state ("saved results: N") with a "Forget saved results" button; package README gained a "Persisting generated values" section.
 - Live check in Storybook (hidden-tab timers throttled ~10×): all 14 visible AI cells generated and were persisted through `onCellsEdited` — "saved results: 14 · model calls: 14", one call per cell, no console errors. Committed as `497b4cc`.
 - Note: the published `tengrids-ai@6.0.4-alpha25` predates this — shipping it needs a version bump across all four packages (`npm run cli -- version <v>`, since cells/source/ai pin core's exact version) and a republish.
+
+### Release 6.0.4-alpha26 — IN PROGRESS
+- [x] Bumped root + all four packages to `6.0.4-alpha26` via `npm run cli -- version` (cells/source/ai now pin `tengrids@6.0.4-alpha26`); root lock and both test-project locks regenerated.
+- [x] Added `packages/ai/CHANGELOG.md` (alpha25 initial release, alpha26 persistence).
+- [x] Full build + lint green (0 errors); ai 109/109; consumer projects install and resolve `tengrids@6.0.4-alpha26`; dry-run packs: core 767 files, cells 120, source 40, ai 94 — all at alpha26. Committed + pushed as "Release 6.0.4-alpha26".
+- [ ] CI green on the release commit.
+- [ ] Publish all four in order (core first — the others pin its exact version): user runs the OTP-gated `npm publish --tag latest -w packages/<pkg>` commands.

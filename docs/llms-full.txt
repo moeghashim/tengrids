@@ -107,7 +107,7 @@ The API documentation lives in [packages/core/API.md](packages/core/API.md). The
 
 # 🤖 AI features (`tengrids-ai`)
 
-`tengrids-ai` adds five model-powered capabilities on top of the grid without putting any vendor SDK in it — you implement one `AiProvider` interface (a `complete(prompt, { signal })` function that returns a string or streams chunks) and every feature routes through it. A `createMockProvider` ships for tests, Storybook, and offline demos.
+`tengrids-ai` adds five model-powered capabilities on top of the grid behind one `AiProvider` interface (a `complete(prompt, { signal })` function that returns a string or streams chunks). Adapters ship for **Claude**, **OpenAI / Codex**, **Grok**, and **OpenRouter** (each vendor's official SDK, installed only if you use it), plus a `createRoutingProvider` that picks a model by task **difficulty** (`low` / `medium` / `high`) or by an explicit per-cell model. A `createMockProvider` ships for tests, Storybook, and offline demos.
 
 | Feature | Hook | In one sentence |
 | --- | --- | --- |

@@ -12,7 +12,14 @@ export interface AiRequest {
     readonly context?: unknown;
     /** Which feature issued the request — useful for routing or telemetry. */
     readonly feature?: "ai-cell" | "search" | "filter" | "smart-paste" | "bulk-edit" | "agent-source" | string;
+    /** Explicit model override (a cell's or column's choice). Adapters honor it unless `allowModelOverride: false`. */
+    readonly model?: string;
+    /** How hard the task is. Routing providers pick a tier by it; the Claude adapter maps it to `effort`. */
+    readonly difficulty?: Difficulty;
 }
+
+/** Task difficulty — the knob users and features turn to trade cost for capability. */
+export type Difficulty = "low" | "medium" | "high";
 
 /** A provider may resolve the whole answer at once or stream chunks. */
 export type AiCompletion = Promise<string> | AsyncIterable<string>;

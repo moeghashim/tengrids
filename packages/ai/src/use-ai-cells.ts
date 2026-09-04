@@ -3,7 +3,7 @@ import type { DataEditorProps, DataEditorRef, EditableGridCell, EditListItem, Gr
 import { type AiCell, AiCellRenderer, isAiCell, withAiResult } from "./ai-cell.js";
 import { cellText } from "./cell-text.js";
 import { hashString } from "./json.js";
-import { type AiProvider, isAbortError } from "./provider.js";
+import { type AiProvider, type Difficulty, isAbortError } from "./provider.js";
 import { AiScheduler } from "./scheduler.js";
 
 export interface UseAiCellsOptions {
@@ -20,6 +20,8 @@ export interface UseAiCellsOptions {
     readonly concurrency?: number;
     /** Optional system instruction sent with every cell prompt. */
     readonly system?: string;
+    /** Difficulty sent for cells that don't set their own (default "medium"). */
+    readonly defaultDifficulty?: Difficulty;
     /**
      * Receives each finished AI cell as an edit (`{ location, value }` with
      * `status: "done"` and the result in `data.result`/`copyData`) so your app
@@ -58,7 +60,7 @@ export function resolveTemplate(template: string, columns: readonly GridColumn[]
  * finished cells through the grid's damage API.
  */
 export function useAiCells(options: UseAiCellsOptions): UseAiCellsResult {
-    const { provider, columns, getCellContent: baseGetCellContent, gridRef, autoRun = true, concurrency, system, onCellsEdited } = options;
+    const { provider, columns, getCellContent: baseGetCellContent, gridRef, autoRun = true, concurrency, system, onCellsEdited, defaultDifficulty = "medium" } = options;
     const onCellsEditedRef = React.useRef(onCellsEdited);
     onCellsEditedRef.current = onCellsEdited;
     const externalScheduler = options.scheduler;
@@ -94,8 +96,9 @@ export function useAiCells(options: UseAiCellsOptions): UseAiCellsResult {
     );
 
     const keyFor = React.useCallback(
-        (location: Item, resolvedPrompt: string) => `${location[0]}:${location[1]}:${hashString(resolvedPrompt)}`,
-        []
+        (location: Item, resolvedPrompt: string, cell: AiCell) =>
+            `${location[0]}:${location[1]}:${hashString(`${resolvedPrompt}\u0000${cell.data.model ?? ""}\u0000${cell.data.difficulty ?? defaultDifficulty}`)}`,
+        [defaultDifficulty]
     );
 
     const isVisible = React.useCallback((location: Item) => {
@@ -105,12 +108,19 @@ export function useAiCells(options: UseAiCellsOptions): UseAiCellsResult {
     }, []);
 
     const schedule = React.useCallback(
-        (location: Item, key: string, resolvedPrompt: string) => {
+        (location: Item, key: string, resolvedPrompt: string, cell: AiCell) => {
             keyToLocation.current.set(key, location);
             scheduler
                 .request(
                     key,
-                    { prompt: resolvedPrompt, system, feature: "ai-cell", context: { location } },
+                    {
+                        prompt: resolvedPrompt,
+                        system,
+                        feature: "ai-cell",
+                        context: { location },
+                        difficulty: cell.data.difficulty ?? defaultDifficulty,
+                        ...(cell.data.model === undefined ? {} : { model: cell.data.model }),
+                    },
                     {
                         priority: isVisible(location) ? 1 : 0,
                         onChunk: acc => {
@@ -140,7 +150,7 @@ export function useAiCells(options: UseAiCellsOptions): UseAiCellsResult {
                     }
                 });
         },
-        [scheduler, system, isVisible, repaint, baseGetCellContent]
+        [scheduler, system, isVisible, repaint, baseGetCellContent, defaultDifficulty]
     );
 
     const getCellContent = React.useCallback<DataEditorProps["getCellContent"]>(
@@ -149,7 +159,7 @@ export function useAiCells(options: UseAiCellsOptions): UseAiCellsResult {
             if (!isAiCell(cell)) return cell;
             if (cell.data.prompt.trim() === "") return withAiResult(cell, { status: "idle" });
             const resolved = resolveTemplate(cell.data.prompt, columns, rowCellsFor(location[1]));
-            const key = keyFor(location, resolved);
+            const key = keyFor(location, resolved, cell);
 
             const fresh = freshResults.current.get(key);
             if (fresh !== undefined) {
@@ -173,7 +183,7 @@ export function useAiCells(options: UseAiCellsOptions): UseAiCellsResult {
             const shouldRun = autoRun || forced.current.has(key);
             if (shouldRun && isVisible(location)) {
                 forced.current.delete(key);
-                schedule(location, key, resolved);
+                schedule(location, key, resolved, cell);
                 return withAiResult(cell, { status: "pending", result: undefined });
             }
             return withAiResult(cell, { status: "idle" });
@@ -203,33 +213,35 @@ export function useAiCells(options: UseAiCellsOptions): UseAiCellsResult {
 
     const run = React.useCallback(
         (location: Item) => {
+            const cell = baseGetCellContent(location);
             const resolved = resolvePrompt(location);
-            if (resolved === undefined) return;
-            const key = keyFor(location, resolved);
+            if (resolved === undefined || !isAiCell(cell)) return;
+            const key = keyFor(location, resolved, cell);
             if (scheduler.has(key) || scheduler.isPending(key)) return;
             forced.current.add(key);
             errors.current.delete(key);
-            schedule(location, key, resolved);
+            schedule(location, key, resolved, cell);
             repaint(location);
         },
-        [resolvePrompt, keyFor, scheduler, schedule, repaint]
+        [baseGetCellContent, resolvePrompt, keyFor, scheduler, schedule, repaint]
     );
 
     const regenerate = React.useCallback(
         (location: Item) => {
+            const cell = baseGetCellContent(location);
             const resolved = resolvePrompt(location);
-            if (resolved === undefined) return;
-            const key = keyFor(location, resolved);
+            if (resolved === undefined || !isAiCell(cell)) return;
+            const key = keyFor(location, resolved, cell);
             scheduler.cancel(key);
             scheduler.clearKey(key);
             errors.current.delete(key);
             partials.current.delete(key);
             regenerating.current.add(key);
             forced.current.add(key);
-            schedule(location, key, resolved);
+            schedule(location, key, resolved, cell);
             repaint(location);
         },
-        [resolvePrompt, keyFor, scheduler, schedule, repaint]
+        [baseGetCellContent, resolvePrompt, keyFor, scheduler, schedule, repaint]
     );
 
     const customRenderers = React.useMemo(() => [AiCellRenderer], []);

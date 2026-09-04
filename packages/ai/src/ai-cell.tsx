@@ -1,5 +1,6 @@
 import * as React from "react";
 import { type CustomCell, type CustomRenderer, type GridCell, GridCellKind, drawTextCell, measureTextCached } from "tengrids";
+import type { Difficulty } from "./provider.js";
 
 export type AiCellStatus = "idle" | "pending" | "streaming" | "done" | "error";
 
@@ -10,6 +11,10 @@ export interface AiCellData {
     readonly result?: string;
     readonly status?: AiCellStatus;
     readonly error?: string;
+    /** Pin a specific model for this cell (passed to the provider as `AiRequest.model`). */
+    readonly model?: string;
+    /** How hard this cell's task is; routing providers pick a tier by it. */
+    readonly difficulty?: Difficulty;
 }
 
 export type AiCell = CustomCell<AiCellData>;
@@ -18,14 +23,27 @@ export function isAiCell(cell: GridCell): cell is AiCell {
     return cell.kind === GridCellKind.Custom && (cell.data as Partial<AiCellData> | undefined)?.kind === "ai-cell";
 }
 
+export interface AiCellOptions {
+    readonly model?: string;
+    readonly difficulty?: Difficulty;
+    /** Other cell properties (themeOverride, contentAlign, readonly, …). */
+    readonly cell?: Partial<Omit<AiCell, "kind" | "data">>;
+}
+
 /** Build an AI cell — the spreadsheet `=AI("…")` formula for a row. */
-export function aiCell(prompt: string, extra: Partial<Omit<AiCell, "kind" | "data">> = {}): AiCell {
+export function aiCell(prompt: string, options: AiCellOptions = {}): AiCell {
     return {
         kind: GridCellKind.Custom,
         allowOverlay: true,
         copyData: "",
-        ...extra,
-        data: { kind: "ai-cell", prompt, status: "idle" },
+        ...options.cell,
+        data: {
+            kind: "ai-cell",
+            prompt,
+            status: "idle",
+            ...(options.model === undefined ? {} : { model: options.model }),
+            ...(options.difficulty === undefined ? {} : { difficulty: options.difficulty }),
+        },
     };
 }
 
@@ -74,13 +92,33 @@ const buttonStyle: React.CSSProperties = {
     cursor: "pointer",
 };
 
+const rowStyle: React.CSSProperties = { display: "flex", gap: 8, alignItems: "center", fontSize: 11, color: "var(--gdg-text-medium)" };
+const controlStyle: React.CSSProperties = { font: "inherit", fontSize: 12, color: "var(--gdg-text-dark)", background: "var(--gdg-bg-cell)", border: "1px solid var(--gdg-border-color)", borderRadius: 4, padding: "2px 4px" };
+
 const AiCellEditor: React.FC<{
     readonly value: AiCell;
     readonly onChange: (newValue: AiCell) => void;
 }> = ({ value, onChange }) => {
-    const { prompt, result, status, error } = value.data;
+    const { prompt, result, status, error, model, difficulty } = value.data;
+    const reset = (patch: Partial<AiCellData>) =>
+        onChange(withAiResult({ ...value, data: { ...value.data, ...patch } }, { result: undefined, status: "idle", error: undefined }));
     return (
         <div style={editorStyle} className="gdg-ai-cell-editor">
+            <div style={rowStyle}>
+                <label>
+                    Difficulty{" "}
+                    <select style={controlStyle} value={difficulty ?? ""} onChange={e => reset({ difficulty: e.target.value === "" ? undefined : (e.target.value as Difficulty) })}>
+                        <option value="">auto</option>
+                        <option value="low">low</option>
+                        <option value="medium">medium</option>
+                        <option value="high">high</option>
+                    </select>
+                </label>
+                <label style={{ flex: 1 }}>
+                    Model{" "}
+                    <input style={{ ...controlStyle, width: "60%" }} placeholder="provider default" value={model ?? ""} onChange={e => reset({ model: e.target.value === "" ? undefined : e.target.value })} />
+                </label>
+            </div>
             <label style={{ fontSize: 11, color: "var(--gdg-text-medium)" }}>
                 Prompt — use {"{Column Title}"} to reference this row
             </label>

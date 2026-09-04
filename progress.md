@@ -110,3 +110,12 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 - [x] Full build + lint green (0 errors); ai 109/109; consumer projects install and resolve `tengrids@6.0.4-alpha26`; dry-run packs: core 767 files, cells 120, source 40, ai 94 — all at alpha26. Committed + pushed as "Release 6.0.4-alpha26".
 - [x] CI green on the release commit `ba6b561`: Build ✓, Visual regression ✓, Storybook deploy ✓.
 - [ ] Publish all four in order (core first — the others pin its exact version): user runs the OTP-gated `npm publish --tag latest -w packages/<pkg>` commands.
+
+### Provider adapters, difficulty tiers, per-cell model choice — IN PROGRESS
+- [x] `AiRequest` gains `model` + `difficulty`; `AiCellData` gains `model` + `difficulty` (overlay editor has a difficulty select and a model field; both are part of the scheduler cache key); `useAiCells` gains `defaultDifficulty` (medium). Feature defaults: search/paste low, bulk edit high.
+- [x] Adapters via official SDKs as optional peers loaded lazily: Claude (`@anthropic-ai/sdk`; `difficulty`→`effort`; server-side refusal fallbacks by default on Opus 5/Fable; `authToken` for OAuth; refusal → error with category), OpenAI + Codex (`openai` Responses API; `difficulty`→`reasoning.effort`), Grok and OpenRouter (chat completions with custom baseURL; OpenRouter attribution headers + ordered `models` fallbacks), generic OpenAI-compatible. Keys accept string or async getter.
+- [x] `createRoutingProvider` (difficulty tiers + explicit model map + per-feature defaults) with a `route()` inspector.
+- [x] Tests: 20 new (SDKs mocked at module level; request shapes, streaming, auth resolution, refusal, routing precedence, cache keyed by model/difficulty) → 126/126.
+- [x] Storybook "Live Providers" harness with the user's example: a "Cost × factor (AI)" column that reads `{Cost}`, multiplies, and prints the result in a new cell using the cheap model; "Pitch (AI)" uses the strong model. Package README (adapters table, tiers, worked example), root README, llms.txt, CHANGELOG (alpha26) updated.
+- [x] Lint, strict build, 126/126 tests, and the static Storybook (with the Live Providers story) all green; committed and pushed as "Add provider adapters, difficulty routing, and per-cell model choice".
+- [ ] CI green.

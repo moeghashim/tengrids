@@ -1,7 +1,7 @@
 {
     "name": "tengrids-ai",
     "version": "6.0.4-alpha26",
-    "description": "AI features for tengrids: AI formula cells, natural-language search and filter, agent-fed data sources, smart paste, and bulk edits — bring your own model",
+    "description": "AI features for tengrids: AI formula cells, natural-language search and filter, agent-fed data sources, smart paste, and bulk edits \u2014 bring your own model, with adapters for Claude, OpenAI/Codex, Grok, and OpenRouter",
     "sideEffects": false,
     "type": "module",
     "browser": "dist/esm/index.js",
@@ -46,13 +46,25 @@
     },
     "peerDependencies": {
         "react": "^16.12.0 || 17.x || 18.x || 19.x",
-        "react-dom": "^16.12.0 || 17.x || 18.x || 19.x"
+        "react-dom": "^16.12.0 || 17.x || 18.x || 19.x",
+        "@anthropic-ai/sdk": "^0.123.0",
+        "openai": "^7.10.0"
     },
     "devDependencies": {
+        "@anthropic-ai/sdk": "^0.123.0",
         "eslint": "^8.57.1",
         "eslint-plugin-import": "^2.31.0",
         "eslint-plugin-react": "^7.37.5",
         "eslint-plugin-react-hooks": "^5.2.0",
+        "openai": "^7.10.0",
         "typescript": "^5.8.3"
+    },
+    "peerDependenciesMeta": {
+        "@anthropic-ai/sdk": {
+            "optional": true
+        },
+        "openai": {
+            "optional": true
+        }
     }
 }

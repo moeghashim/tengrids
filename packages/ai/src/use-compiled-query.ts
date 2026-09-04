@@ -108,7 +108,7 @@ export function useCompiledQuery(options: UseCompiledQueryOptions): CompiledQuer
                 const samples = Array.from({ length: Math.min(sampleRows, rows) }, (_, r) => rowCellsFor(r));
                 const answer = await collectCompletion(
                     provider.complete(
-                        { prompt: buildQueryPrompt(q, columns, samples), system: "You translate search queries into JSON filters. Reply with JSON only.", feature: "search" },
+                        { prompt: buildQueryPrompt(q, columns, samples), system: "You translate search queries into JSON filters. Reply with JSON only.", feature: "search", difficulty: "low" },
                         { signal: controller.signal }
                     ),
                     undefined,

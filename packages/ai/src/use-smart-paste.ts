@@ -81,6 +81,7 @@ export function useSmartPaste(options: UseSmartPasteOptions): UseSmartPasteResul
                             prompt: buildSmartPastePrompt(items),
                             system: "You convert pasted spreadsheet text into typed cell values. Reply with JSON only.",
                             feature: "smart-paste",
+                            difficulty: "low",
                         },
                         { signal: controller.signal }
                     ),

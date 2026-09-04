@@ -22,6 +22,55 @@ const provider: AiProvider = {
 
 For tests, Storybook, and offline demos: `createMockProvider(input => "answer", { delayMs })` — it records every call and can stream chunks.
 
+### Built-in adapters
+
+Each adapter uses that vendor's official SDK, loaded lazily — install only the ones you use (`@anthropic-ai/sdk`, `openai`). Keys can be a string or an async getter that mints a short-lived token from your backend.
+
+| Vendor | Factory | Default model | Notes |
+| --- | --- | --- | --- |
+| Claude | `createAnthropicProvider({ apiKey \| authToken, model?, effort?, maxTokens? })` | `claude-opus-5` | `difficulty` → `output_config.effort`; server-side refusal fallbacks on by default for Opus 5 / Fable 5 (`fallbacks: false` to disable); `authToken` for OAuth |
+| OpenAI | `createOpenAiProvider({ apiKey, model? })` | `gpt-5` | Responses API; `difficulty` → `reasoning.effort` |
+| Codex | `createCodexProvider({ apiKey, model? })` | `gpt-5-codex` | Same adapter as OpenAI |
+| Grok | `createGrokProvider({ apiKey, model? })` | `grok-4` | OpenAI-compatible at `api.x.ai` |
+| OpenRouter | `createOpenRouterProvider({ apiKey, model?, fallbackModels?, site? })` | `openrouter/auto` | One key, any model; attribution headers; ordered fallbacks |
+| Anything OpenAI-compatible | `createOpenAiCompatibleProvider({ apiKey, baseURL, model })` | — | Local servers, other gateways |
+
+All accept `dangerouslyAllowBrowser: true` for experiments; production apps should call from a backend.
+
+### Difficulty tiers and model choice
+
+Every request carries a `difficulty` (`low` / `medium` / `high`) and may carry an explicit `model`. Features set sensible defaults — search compilation and smart paste are `low`, bulk edit is `high`, AI cells are `medium` unless the cell says otherwise — and `createRoutingProvider` turns them into a plan:
+
+```ts
+const provider = createRoutingProvider({
+    low: createAnthropicProvider({ apiKey, model: "claude-haiku-4-5" }),
+    medium: createAnthropicProvider({ apiKey, model: "claude-sonnet-5" }),
+    high: createAnthropicProvider({ apiKey, model: "claude-opus-5" }),
+    default: createOpenRouterProvider({ apiKey: orKey }),
+    models: { "grok-4": createGrokProvider({ apiKey: xaiKey }) }, // a cell that pins grok-4 goes here
+});
+```
+
+Per cell: `aiCell("…", { model: "grok-4", difficulty: "high" })`, or change either in the cell's overlay editor. A single-vendor adapter also honors `model` by itself (`allowModelOverride: false` to pin it).
+
+### Worked example: read a cost, multiply it, print the result in a new cell with a chosen model
+
+```tsx
+const getCellContent = ([col, row]) =>
+    col === SCALED_COL
+        ? aiCell("Multiply {Cost} by 1.2. Reply with only the resulting number, two decimals.", {
+              model: "claude-haiku-4-5", // a cheap model for a simple task
+              difficulty: "low",
+              cell: { contentAlign: "right" },
+          })
+        : baseCells(col, row);
+
+const ai = useAiCells({ provider, columns, getCellContent, gridRef, onCellsEdited: persist });
+```
+
+The new column's cell references the Cost cell through `{Cost}`, the answer renders in that cell, and `onCellsEdited` hands it to your app (parse it with `parseNumber(result)` if you want a number). Try it live in Storybook under **Extra Packages → AI → Live Providers** with your own key.
+
+
 ## Features
 
 | Feature | Hook / export | What it does |

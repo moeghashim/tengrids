@@ -1,7 +1,11 @@
 import * as React from "react";
 import { DataEditor, GridCellKind, type DataEditorRef, type GridCell, type GridColumn, type GridSelection, type Item, CompactSelection } from "tengrids";
 import "tengrids/dist/index.css";
-import { aiCell, createMockProvider, type AiRequest, useAgentDataSource, useAiCells, useBulkEdit, useNaturalLanguageFilter, useNaturalLanguageSearch, useSmartPaste } from "./index.js";
+import {
+    aiCell, createMockProvider, type AiProvider, type AiRequest,
+    createAnthropicProvider, createCodexProvider, createGrokProvider, createOpenAiProvider, createOpenRouterProvider, createRoutingProvider,
+    useAgentDataSource, useAiCells, useBulkEdit, useNaturalLanguageFilter, useNaturalLanguageSearch, useSmartPaste,
+} from "./index.js";
 
 export default {
     title: "Extra Packages/AI",
@@ -371,6 +375,161 @@ export const BulkEdit: React.FC = () => {
                 highlightRegions={bulk.highlightRegions}
                 rowMarkers="both"
                 rowSelect="multi"
+            />
+        </Frame>
+    );
+};
+
+// ------------------------------------------------- 6. live providers harness
+
+type Vendor = "anthropic" | "openai" | "codex" | "grok" | "openrouter";
+const VENDOR_DEFAULT_MODEL: Record<Vendor, string> = { anthropic: "claude-opus-5", openai: "gpt-5", codex: "gpt-5-codex", grok: "grok-4", openrouter: "openrouter/auto" };
+const VENDOR_CHEAP_MODEL: Record<Vendor, string> = { anthropic: "claude-haiku-4-5", openai: "gpt-5-mini", codex: "gpt-5-codex", grok: "grok-4", openrouter: "openrouter/auto" };
+
+function makeVendorProvider(vendor: Vendor, apiKey: string, model: string): AiProvider {
+    const common = { apiKey, model, dangerouslyAllowBrowser: true };
+    switch (vendor) {
+        case "anthropic":
+            return createAnthropicProvider(common);
+        case "openai":
+            return createOpenAiProvider(common);
+        case "codex":
+            return createCodexProvider(common);
+        case "grok":
+            return createGrokProvider(common);
+        case "openrouter":
+            return createOpenRouterProvider({ ...common, site: { title: "tengrids Storybook" } });
+    }
+}
+
+const inputStyle: React.CSSProperties = { padding: 6, marginRight: 8 };
+
+/**
+ * Connect a real model with your own key (kept in memory only — never persisted).
+ * Column "Cost × factor (AI)" is the worked example: it reads the Cost cell,
+ * multiplies it, and prints the result in a new cell using the cheap model of
+ * the vendor you picked; "Pitch (AI)" uses the strong model.
+ */
+export const LiveProviders: React.FC = () => {
+    const [vendor, setVendor] = React.useState<Vendor>("anthropic");
+    const [apiKey, setApiKey] = React.useState("");
+    const [strongModel, setStrongModel] = React.useState(VENDOR_DEFAULT_MODEL.anthropic);
+    const [cheapModel, setCheapModel] = React.useState(VENDOR_CHEAP_MODEL.anthropic);
+    const [connected, setConnected] = React.useState<{ provider: AiProvider; label: string } | undefined>(undefined);
+    const [factor, setFactor] = React.useState(1.2);
+
+    const products = React.useMemo(
+        () => [
+            { name: "Standing desk", cost: 349, notes: "Bamboo top, dual motor" },
+            { name: "Task chair", cost: 189.5, notes: "Mesh back, lumbar support" },
+            { name: "Monitor arm", cost: 79, notes: "Fits 17–32 inch, gas spring" },
+            { name: "Desk lamp", cost: 42.25, notes: "Warm/cool dimming" },
+            { name: "Cable tray", cost: 24, notes: "Under-desk, steel" },
+            { name: "Footrest", cost: 31, notes: "Adjustable tilt" },
+        ],
+        []
+    );
+    const columns = React.useMemo<GridColumn[]>(
+        () => [
+            { title: "Product", id: "product", width: 150 },
+            { title: "Cost", id: "cost", width: 90 },
+            { title: "Notes", id: "notes", width: 200 },
+            { title: `Cost × ${factor} (AI)`, id: "scaled", width: 150 },
+            { title: "Pitch (AI)", id: "pitch", width: 360 },
+        ],
+        [factor]
+    );
+    const [saved, setSaved] = React.useState<Map<string, GridCell>>(() => new Map());
+    const getCellContent = React.useCallback(
+        ([col, row]: Item): GridCell => {
+            const p = products[row];
+            if (col === 0) return text(p.name);
+            if (col === 1) return num(p.cost);
+            if (col === 2) return text(p.notes);
+            const stored = saved.get(`${col}:${row}`);
+            if (stored !== undefined) return stored;
+            if (col === 3)
+                return aiCell(`Multiply {Cost} by ${factor}. Reply with only the resulting number, two decimals, no currency symbol.`, {
+                    model: cheapModel,
+                    difficulty: "low",
+                    cell: { contentAlign: "right" },
+                });
+            return aiCell("Write one punchy sales sentence for {Product} ({Notes}) priced at {Cost}.", { model: strongModel, difficulty: "high" });
+        },
+        [products, saved, factor, cheapModel, strongModel]
+    );
+    const onCellsEdited = React.useCallback((edits: readonly { location: Item; value: GridCell }[]) => {
+        setSaved(prev => {
+            const next = new Map(prev);
+            for (const e of edits) next.set(`${e.location[0]}:${e.location[1]}`, e.value);
+            return next;
+        });
+        return true;
+    }, []);
+    const gridRef = React.useRef<DataEditorRef | null>(null);
+    const fallback = React.useMemo(() => createMockProvider(() => "(connect a provider above to generate)"), []);
+    const provider = React.useMemo(() => {
+        if (connected === undefined) return fallback;
+        return createRoutingProvider({ default: connected.provider, models: { [cheapModel]: connected.provider, [strongModel]: connected.provider } });
+    }, [connected, fallback, cheapModel, strongModel]);
+    const ai = useAiCells({ provider, columns, getCellContent, gridRef, onCellsEdited, concurrency: 2 });
+    const connect = () => {
+        if (apiKey.trim() === "") return;
+        setSaved(new Map());
+        setConnected({ provider: makeVendorProvider(vendor, apiKey.trim(), strongModel), label: `${vendor} · ${strongModel} / ${cheapModel}` });
+    };
+    return (
+        <Frame
+            title="Live providers — Claude, OpenAI/Codex, Grok, OpenRouter"
+            blurb="Paste a key for the vendor you choose (it stays in this page's memory only), then connect. The Cost × factor column reads each row's Cost cell, multiplies it, and prints the result in a new cell using the cheap model; the Pitch column uses the strong model. Double-click any AI cell to change its prompt, model, or difficulty. Browser-direct calls are for experimenting — production apps should route through their own backend."
+            aside={
+                <span style={{ display: "inline-flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                    <select
+                        style={inputStyle}
+                        value={vendor}
+                        onChange={e => {
+                            const v = e.target.value as Vendor;
+                            setVendor(v);
+                            setStrongModel(VENDOR_DEFAULT_MODEL[v]);
+                            setCheapModel(VENDOR_CHEAP_MODEL[v]);
+                        }}>
+                        <option value="anthropic">Claude (Anthropic)</option>
+                        <option value="openai">OpenAI</option>
+                        <option value="codex">Codex (OpenAI)</option>
+                        <option value="grok">Grok (xAI)</option>
+                        <option value="openrouter">OpenRouter</option>
+                    </select>
+                    <input style={inputStyle} type="password" placeholder="API key" value={apiKey} onChange={e => setApiKey(e.target.value)} />
+                    <input style={inputStyle} value={strongModel} onChange={e => setStrongModel(e.target.value)} title="strong model" />
+                    <input style={inputStyle} value={cheapModel} onChange={e => setCheapModel(e.target.value)} title="cheap model" />
+                    <label>
+                        factor{" "}
+                        <input
+                            style={{ ...inputStyle, width: 60 }}
+                            type="number"
+                            step="0.1"
+                            value={factor}
+                            onChange={e => {
+                                setFactor(Number(e.target.value) || 1);
+                                setSaved(new Map());
+                            }}
+                        />
+                    </label>
+                    <button onClick={connect} disabled={apiKey.trim() === ""}>Connect</button>
+                    <span>
+                        {connected === undefined ? "not connected" : `connected: ${connected.label}`} · saved results: <b>{saved.size}</b>
+                    </span>
+                </span>
+            }>
+            <DataEditor
+                ref={gridRef}
+                columns={columns}
+                rows={products.length}
+                getCellContent={ai.getCellContent}
+                customRenderers={ai.customRenderers}
+                onVisibleRegionChanged={ai.onVisibleRegionChanged}
+                onCellsEdited={onCellsEdited}
+                rowMarkers="number"
             />
         </Frame>
     );

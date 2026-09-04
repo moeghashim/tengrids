@@ -127,6 +127,7 @@ export function useBulkEdit(options: UseBulkEditOptions): UseBulkEditResult {
                             prompt: buildBulkEditPrompt(instruction, columns, scopedCols, rowsData),
                             system: "You edit spreadsheet rows exactly as instructed and reply with JSON only.",
                             feature: "bulk-edit",
+                            difficulty: "high",
                         },
                         { signal: controller.signal }
                     ),

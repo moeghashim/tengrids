@@ -39,6 +39,13 @@ describe("aiCell helpers", () => {
         expect(isAiCell({ kind: GridCellKind.Custom, data: { kind: "star-cell" }, copyData: "", allowOverlay: false })).toBe(false);
     });
 
+    it("carries model and difficulty and other cell props", () => {
+        const c = aiCell("p", { model: "grok-4", difficulty: "low", cell: { contentAlign: "right" } });
+        expect(c.data).toMatchObject({ model: "grok-4", difficulty: "low" });
+        expect(c.contentAlign).toBe("right");
+        expect(aiCell("p").data).not.toHaveProperty("model");
+    });
+
     it("withAiResult keeps copyData in sync with the result", () => {
         const c = withAiResult(aiCell("p"), { result: "answer", status: "done" });
         expect(c.copyData).toBe("answer");

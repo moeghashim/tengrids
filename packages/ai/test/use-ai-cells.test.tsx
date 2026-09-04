@@ -199,4 +199,33 @@ describe("useAiCells", () => {
         const after = result.current.getCellContent([2, 0]);
         expect(isAiCell(after) && after.data.result).toBe("fresh");
     });
+
+    it("sends the cell's model and difficulty, defaults difficulty to medium, and keys the cache by both", async () => {
+        const provider = createMockProvider(i => `${i.model ?? "-"}/${i.difficulty}`);
+        const cells: Record<string, GridCell> = {
+            plain: aiCell("Summarize {Name}"),
+            hard: aiCell("Summarize {Name}", { difficulty: "high", model: "claude-opus-5" }),
+        };
+        let which = "plain";
+        const gcc = ([col, row]: Item): GridCell => (col === 2 ? cells[which] : getCellContent([col, row]));
+        const { result } = renderHook(() => useAiCells({ provider, columns, getCellContent: gcc }));
+        result.current.getCellContent([2, 0]);
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(0);
+        });
+        expect(provider.calls[0]).toMatchObject({ difficulty: "medium", feature: "ai-cell" });
+        expect(provider.calls[0].model).toBeUndefined();
+        const plain = result.current.getCellContent([2, 0]);
+        expect(isAiCell(plain) && plain.data.result).toBe("-/medium");
+
+        which = "hard"; // same prompt, different model/difficulty → a new request, not a cache hit
+        result.current.getCellContent([2, 0]);
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(0);
+        });
+        expect(provider.calls).toHaveLength(2);
+        expect(provider.calls[1]).toMatchObject({ difficulty: "high", model: "claude-opus-5" });
+        const hard = result.current.getCellContent([2, 0]);
+        expect(isAiCell(hard) && hard.data.result).toBe("claude-opus-5/high");
+    });
 });

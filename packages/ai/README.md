@@ -63,6 +63,14 @@ function Grid() {
 }
 ```
 
+### Persisting generated values
+
+Pass `onCellsEdited` to `useAiCells` and every finished cell arrives as a normal edit — `{ location, value }` with `status: "done"` and the text in `data.result` / `copyData` — so your existing handler stores it like a user edit (and `useUndoRedo` sees it). When `getCellContent` later returns an AI cell that already carries a `done` result, the hook trusts it and never regenerates: a saved sheet reloads for free, and a result a person edited by hand wins over the cache. `regenerate([col, row])` bypasses the stored value until the fresh one is persisted.
+
+```tsx
+const ai = useAiCells({ provider, columns, getCellContent, gridRef, onCellsEdited: saveToDatabase });
+```
+
 ## Natural-language search
 
 ```tsx

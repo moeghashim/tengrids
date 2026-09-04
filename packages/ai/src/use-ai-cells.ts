@@ -1,5 +1,5 @@
 import * as React from "react";
-import type { DataEditorProps, DataEditorRef, GridCell, GridColumn, Item, Rectangle } from "tengrids";
+import type { DataEditorProps, DataEditorRef, EditableGridCell, EditListItem, GridCell, GridColumn, Item, Rectangle } from "tengrids";
 import { type AiCell, AiCellRenderer, isAiCell, withAiResult } from "./ai-cell.js";
 import { cellText } from "./cell-text.js";
 import { hashString } from "./json.js";
@@ -20,6 +20,14 @@ export interface UseAiCellsOptions {
     readonly concurrency?: number;
     /** Optional system instruction sent with every cell prompt. */
     readonly system?: string;
+    /**
+     * Receives each finished AI cell as an edit (`{ location, value }` with
+     * `status: "done"` and the result in `data.result`/`copyData`) so your app
+     * can persist generated values exactly like user edits. A cell that comes
+     * back from `getCellContent` already holding a `done` result is trusted
+     * and never regenerated — that is what makes a saved sheet reload for free.
+     */
+    readonly onCellsEdited?: (edits: readonly EditListItem[]) => void;
 }
 
 export interface UseAiCellsResult
@@ -50,7 +58,9 @@ export function resolveTemplate(template: string, columns: readonly GridColumn[]
  * finished cells through the grid's damage API.
  */
 export function useAiCells(options: UseAiCellsOptions): UseAiCellsResult {
-    const { provider, columns, getCellContent: baseGetCellContent, gridRef, autoRun = true, concurrency, system } = options;
+    const { provider, columns, getCellContent: baseGetCellContent, gridRef, autoRun = true, concurrency, system, onCellsEdited } = options;
+    const onCellsEditedRef = React.useRef(onCellsEdited);
+    onCellsEditedRef.current = onCellsEdited;
     const externalScheduler = options.scheduler;
     const scheduler = React.useMemo(() => {
         if (externalScheduler !== undefined) return externalScheduler;
@@ -62,6 +72,10 @@ export function useAiCells(options: UseAiCellsOptions): UseAiCellsResult {
     const partials = React.useRef(new Map<string, string>());
     const errors = React.useRef(new Map<string, string>());
     const forced = React.useRef(new Set<string>());
+    /** Keys whose persisted result must be ignored until a fresh one arrives. */
+    const regenerating = React.useRef(new Set<string>());
+    /** Freshly generated results that override a stale persisted value until the app persists them. */
+    const freshResults = React.useRef(new Map<string, string>());
     const visible = React.useRef<Rectangle | undefined>(undefined);
     const keyToLocation = React.useRef(new Map<string, Item>());
 
@@ -105,20 +119,28 @@ export function useAiCells(options: UseAiCellsOptions): UseAiCellsResult {
                         },
                     }
                 )
-                .then(() => {
+                .then(result => {
                     partials.current.delete(key);
                     errors.current.delete(key);
+                    regenerating.current.delete(key);
+                    freshResults.current.set(key, result);
+                    const base = baseGetCellContent(location);
+                    if (isAiCell(base) && onCellsEditedRef.current !== undefined) {
+                        const value = withAiResult(base, { result, status: "done", error: undefined }) as unknown as EditableGridCell;
+                        onCellsEditedRef.current([{ location, value }]);
+                    }
                     repaint(location);
                 })
                 .catch((e: unknown) => {
                     partials.current.delete(key);
+                    regenerating.current.delete(key);
                     if (!isAbortError(e)) {
                         errors.current.set(key, e instanceof Error ? e.message : String(e));
                         repaint(location);
                     }
                 });
         },
-        [scheduler, system, isVisible, repaint]
+        [scheduler, system, isVisible, repaint, baseGetCellContent]
     );
 
     const getCellContent = React.useCallback<DataEditorProps["getCellContent"]>(
@@ -128,6 +150,17 @@ export function useAiCells(options: UseAiCellsOptions): UseAiCellsResult {
             if (cell.data.prompt.trim() === "") return withAiResult(cell, { status: "idle" });
             const resolved = resolveTemplate(cell.data.prompt, columns, rowCellsFor(location[1]));
             const key = keyFor(location, resolved);
+
+            const fresh = freshResults.current.get(key);
+            if (fresh !== undefined) {
+                if (cell.data.result === fresh) freshResults.current.delete(key); // the app persisted it
+                else return withAiResult(cell, { result: fresh, status: "done", error: undefined });
+            }
+            if (cell.data.status === "done" && cell.data.result !== undefined && !regenerating.current.has(key)) {
+                // A persisted result — possibly edited by a human — wins over anything cached.
+                if (scheduler.get(key) !== cell.data.result) scheduler.prime(key, cell.data.result);
+                return cell;
+            }
 
             const cached = scheduler.get(key);
             if (cached !== undefined) return withAiResult(cell, { result: cached, status: "done", error: undefined });
@@ -191,6 +224,7 @@ export function useAiCells(options: UseAiCellsOptions): UseAiCellsResult {
             scheduler.clearKey(key);
             errors.current.delete(key);
             partials.current.delete(key);
+            regenerating.current.add(key);
             forced.current.add(key);
             schedule(location, key, resolved);
             repaint(location);

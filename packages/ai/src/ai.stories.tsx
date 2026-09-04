@@ -65,30 +65,40 @@ export const AiCells: React.FC = () => {
             ),
         []
     );
+    // "Persisted" AI results: in a real app this is your database. Finished
+    // cells arrive through onCellsEdited; on reload they come back with a
+    // done result and are never regenerated.
+    const [saved, setSaved] = React.useState<Map<number, GridCell>>(() => new Map());
     const baseGetCellContent = React.useCallback(
         ([col, row]: Item): GridCell => {
             const p = people[row];
             if (col === 0) return text(p.name);
             if (col === 1) return text(p.dept);
             if (col === 2) return text(p.notes);
-            return aiCell("Write one friendly sentence for {Name}: they work in {Dept} and are someone who {Notes}");
+            return saved.get(row) ?? aiCell("Write one friendly sentence for {Name}: they work in {Dept} and are someone who {Notes}");
         },
-        [people]
+        [people, saved]
     );
-    const gridRef = React.useRef<DataEditorRef | null>(null);
-    const ai = useAiCells({ provider, columns, getCellContent: baseGetCellContent, gridRef, concurrency: 3 });
-    // The grid repaints finished cells through the damage API without re-rendering this component,
-    // so poll the counters for the caption.
-    const [, tick] = React.useReducer((x: number) => x + 1, 0);
-    React.useEffect(() => {
-        const t = setInterval(tick, 500);
-        return () => clearInterval(t);
+    const onCellsEdited = React.useCallback((edits: readonly { location: Item; value: GridCell }[]) => {
+        setSaved(prev => {
+            const next = new Map(prev);
+            for (const e of edits) if (e.location[0] === 3) next.set(e.location[1], e.value);
+            return next;
+        });
+        return true;
     }, []);
+    const gridRef = React.useRef<DataEditorRef | null>(null);
+    const ai = useAiCells({ provider, columns, getCellContent: baseGetCellContent, gridRef, concurrency: 3, onCellsEdited });
     return (
         <Frame
             title="AI cells — =AI() formulas"
-            blurb="The last column is an AI cell whose prompt references the row's other cells. Cells generate as they scroll into view, stream their text, cache by prompt, and cancel when scrolled away. Double-click one to edit the prompt or regenerate."
-            aside={<span>provider calls so far: <b>{provider.calls.length}</b> · scheduler cache hits: <b>{ai.scheduler.stats.hits}</b></span>}>
+            blurb="The last column is an AI cell whose prompt references the row's other cells. Cells generate as they scroll into view, stream their text, cache by prompt, and cancel when scrolled away. Finished results are handed to onCellsEdited so your app can persist them; double-click a cell to edit the prompt or regenerate."
+            aside={
+                <span>
+                    saved results: <b>{saved.size}</b> · model calls: <b>{provider.calls.length}</b>
+                    <button style={{ marginLeft: 12 }} onClick={() => setSaved(new Map())}>Forget saved results</button>
+                </span>
+            }>
             <DataEditor
                 ref={gridRef}
                 columns={columns}
@@ -96,6 +106,7 @@ export const AiCells: React.FC = () => {
                 getCellContent={ai.getCellContent}
                 customRenderers={ai.customRenderers}
                 onVisibleRegionChanged={ai.onVisibleRegionChanged}
+                onCellsEdited={onCellsEdited}
                 rowMarkers="number"
                 smoothScrollY
             />

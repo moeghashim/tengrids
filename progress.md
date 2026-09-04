@@ -95,3 +95,10 @@ Result: agents can `npm i tengrids`; `llms.txt`/`API.md`/`llms-full.txt` are ser
 
 ### tengrids-ai — DONE
 Result: five bring-your-own-model AI features shipped as a fourth package, 106 tests, strict build + lint clean, six Storybook demos deployed to Pages, docs updated, CI green, published to npm.
+
+### AI cells: persist generated values (`onCellsEdited`)
+- `useAiCells` gained an `onCellsEdited` option: each finished cell is emitted once as a normal edit (`status: "done"`, result in `data.result`/`copyData`) — never for streaming partials or cached reads — so apps persist AI output exactly like user edits (and `useUndoRedo` sees it).
+- Persisted results are trusted: an AI cell returned from `getCellContent` with a `done` result is served as-is with the scheduler cache primed, so a saved sheet reloads with zero model calls; a hand-edited result wins over the cache.
+- Precedence rule for `regenerate()`: the fresh result overrides the stale persisted value until the app persists it (a `freshResults` override map cleared when the base cell catches up).
+- 3 new tests (emit-once semantics, persisted trust + primed cache, regenerate precedence) → 109/109. Demo now persists results into state ("saved results: N") with a "Forget saved results" button; package README gained a "Persisting generated values" section.
+- Note: the published `tengrids-ai@6.0.4-alpha25` predates this — shipping it needs a version bump across all four packages (`npm run cli -- version <v>`, since cells/source/ai pin core's exact version) and a republish.

@@ -108,5 +108,5 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 - [x] Bumped root + all four packages to `6.0.4-alpha26` via `npm run cli -- version` (cells/source/ai now pin `tengrids@6.0.4-alpha26`); root lock and both test-project locks regenerated.
 - [x] Added `packages/ai/CHANGELOG.md` (alpha25 initial release, alpha26 persistence).
 - [x] Full build + lint green (0 errors); ai 109/109; consumer projects install and resolve `tengrids@6.0.4-alpha26`; dry-run packs: core 767 files, cells 120, source 40, ai 94 — all at alpha26. Committed + pushed as "Release 6.0.4-alpha26".
-- [ ] CI green on the release commit.
+- [x] CI green on the release commit `ba6b561`: Build ✓, Visual regression ✓, Storybook deploy ✓.
 - [ ] Publish all four in order (core first — the others pin its exact version): user runs the OTP-gated `npm publish --tag latest -w packages/<pkg>` commands.

@@ -118,4 +118,4 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 - [x] Tests: 20 new (SDKs mocked at module level; request shapes, streaming, auth resolution, refusal, routing precedence, cache keyed by model/difficulty) → 126/126.
 - [x] Storybook "Live Providers" harness with the user's example: a "Cost × factor (AI)" column that reads `{Cost}`, multiplies, and prints the result in a new cell using the cheap model; "Pitch (AI)" uses the strong model. Package README (adapters table, tiers, worked example), root README, llms.txt, CHANGELOG (alpha26) updated.
 - [x] Lint, strict build, 126/126 tests, and the static Storybook (with the Live Providers story) all green; committed and pushed as "Add provider adapters, difficulty routing, and per-cell model choice".
-- [ ] CI green.
+- [x] CI green on `e0bcf3c`: Build ✓, Storybook deploy ✓ (Live Providers story published to Pages), Visual regression ✓.

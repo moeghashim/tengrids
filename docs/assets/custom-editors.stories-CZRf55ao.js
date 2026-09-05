@@ -1,0 +1,11 @@
+import{R as e}from"./iframe-DJsx_LMI.js";import{D as u}from"./data-editor-all-xo4btEP4.js";import{u as p,d as E,B as C,D as f,P as g}from"./utils-CpGkIYWR.js";import{S as h}from"./story-utils-4UdsftyL.js";import{G as v}from"./image-window-loader-BL-vzFfI.js";import"./preload-helper-Dp1pzeXC.js";import"./throttle-xUL8d2YT.js";import"./flatten-DKU9CJY_.js";import"./scrolling-data-grid-D8pm8eI1.js";import"./marked.esm-B8EVsN7W.js";import"./isArray-C6bsAYrg.js";import"./throttle--dN168Gr.js";const _={title:"Glide-Data-Grid/DataEditor Demos",decorators:[t=>e.createElement(h,null,e.createElement(C,{title:"Custom Editors",description:e.createElement(f,null,"The ",e.createElement(g,null,"provideEditor")," callback allows you to provide a custom editor for a cell. In this example, cells in the first column get a custom editor.")},e.createElement(t,null)))]},m=t=>{const{value:o,onFinishedEditing:r}=t,[a,i]=e.useState(o.data);return e.createElement("div",{style:{width:"100%",height:"100%"}},"Type something:",e.createElement("input",{style:{width:"100%",height:"100%",boxSizing:"border-box",border:"2px solid #666",background:"#333",color:"white",padding:"0 8px"},value:a,onChange:c=>i(c.target.value),onBlur:()=>r({...o,data:a})}))};m.displayName="CustomEditor";const x=t=>{var o;if(((o=t.location)==null?void 0:o[0])===0)return r=>e.createElement(m,{...r})},l=()=>{const{cols:t,getCellContent:o,setCellValue:r}=p(10,!1);return e.createElement(u,{...E,getCellContent:o,columns:t,rows:20,onCellEdited:(a,i)=>{i.kind===v.Text&&r(a,i)},provideEditor:x})};l.displayName="CustomEditors";var n,s,d;l.parameters={...l.parameters,docs:{...(n=l.parameters)==null?void 0:n.docs,source:{originalSource:`() => {
+  const {
+    cols,
+    getCellContent,
+    setCellValue
+  } = useMockDataGenerator(10, false);
+  return <DataEditor {...defaultProps} getCellContent={getCellContent} columns={cols} rows={20} onCellEdited={(cell, newValue) => {
+    if (newValue.kind !== GridCellKind.Text) return;
+    setCellValue(cell, newValue);
+  }} provideEditor={provideEditor as ProvideEditorCallback<any>} />;
+}`,...(d=(s=l.parameters)==null?void 0:s.docs)==null?void 0:d.source}}};const K=["CustomEditors"];export{l as CustomEditors,K as __namedExportsOrder,_ as default};

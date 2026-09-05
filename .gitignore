@@ -22,3 +22,6 @@ playwright-report/
 test-results/
 storybook-build/
 .design-sync/*.log
+
+# personal Claude Code settings (launch.json is shared on purpose)
+.claude/settings.local.json

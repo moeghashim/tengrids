@@ -104,14 +104,14 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 - Live check in Storybook (hidden-tab timers throttled ~10×): all 14 visible AI cells generated and were persisted through `onCellsEdited` — "saved results: 14 · model calls: 14", one call per cell, no console errors. Committed as `497b4cc`.
 - Note: the published `tengrids-ai@6.0.4-alpha25` predates this — shipping it needs a version bump across all four packages (`npm run cli -- version <v>`, since cells/source/ai pin core's exact version) and a republish.
 
-### Release 6.0.4-alpha26 — IN PROGRESS
+### Release 6.0.4-alpha26 — DONE
 - [x] Bumped root + all four packages to `6.0.4-alpha26` via `npm run cli -- version` (cells/source/ai now pin `tengrids@6.0.4-alpha26`); root lock and both test-project locks regenerated.
 - [x] Added `packages/ai/CHANGELOG.md` (alpha25 initial release, alpha26 persistence).
 - [x] Full build + lint green (0 errors); ai 109/109; consumer projects install and resolve `tengrids@6.0.4-alpha26`; dry-run packs: core 767 files, cells 120, source 40, ai 94 — all at alpha26. Committed + pushed as "Release 6.0.4-alpha26".
 - [x] CI green on the release commit `ba6b561`: Build ✓, Visual regression ✓, Storybook deploy ✓.
-- [ ] Publish all four in order (core first — the others pin its exact version): user runs the OTP-gated `npm publish --tag latest -w packages/<pkg>` commands.
+- [x] Published all four at `6.0.4-alpha26` (user ran `npm login` + the four publish commands on 2026-09-05; `tengrids-ai` took a few minutes to propagate). Registry `latest` → alpha26 for all four; clean-room `npm i`: cells/source/ai pin `tengrids@6.0.4-alpha26`, ai exposes 49 exports incl. every provider factory, ESM + CJS + types present.
 
-### Provider adapters, difficulty tiers, per-cell model choice — IN PROGRESS
+### Provider adapters, difficulty tiers, per-cell model choice — DONE
 - [x] `AiRequest` gains `model` + `difficulty`; `AiCellData` gains `model` + `difficulty` (overlay editor has a difficulty select and a model field; both are part of the scheduler cache key); `useAiCells` gains `defaultDifficulty` (medium). Feature defaults: search/paste low, bulk edit high.
 - [x] Adapters via official SDKs as optional peers loaded lazily: Claude (`@anthropic-ai/sdk`; `difficulty`→`effort`; server-side refusal fallbacks by default on Opus 5/Fable; `authToken` for OAuth; refusal → error with category), OpenAI + Codex (`openai` Responses API; `difficulty`→`reasoning.effort`), Grok and OpenRouter (chat completions with custom baseURL; OpenRouter attribution headers + ordered `models` fallbacks), generic OpenAI-compatible. Keys accept string or async getter.
 - [x] `createRoutingProvider` (difficulty tiers + explicit model map + per-feature defaults) with a `route()` inspector.
@@ -119,3 +119,14 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 - [x] Storybook "Live Providers" harness with the user's example: a "Cost × factor (AI)" column that reads `{Cost}`, multiplies, and prints the result in a new cell using the cheap model; "Pitch (AI)" uses the strong model. Package README (adapters table, tiers, worked example), root README, llms.txt, CHANGELOG (alpha26) updated.
 - [x] Lint, strict build, 126/126 tests, and the static Storybook (with the Live Providers story) all green; committed and pushed as "Add provider adapters, difficulty routing, and per-cell model choice".
 - [x] CI green on `e0bcf3c`: Build ✓, Storybook deploy ✓ (Live Providers story published to Pages), Visual regression ✓.
+
+## 2026-09-05
+
+### Security triage, Dependabot review, Vitest 4, launch config — IN PROGRESS
+- [x] `npm audit --omit=dev`: 4 findings → 0. minimatch 9.0.9 / brace-expansion 2.1.4 / yaml 1.10.3 were lockfile-only updates (linaria 6's nested copies and react-select → cosmiconfig; build-tool code, never shipped to a browser). dompurify: root override to ^3.4.14 — but `@toast-ui/editor` 3.2.2 inlines DOMPurify 2.3.3 into its dist, so the override only cleans the unused on-disk copy; documented in AGENTS.md and the cells README. The real fix is replacing toast-ui in the ArticleCell (product decision). Commit `98db23e`.
+- [x] npm 11.12 quirk found on the way: it does not apply an override to a package that is already in the lockfile (isolated repro; npm 10 and 12 do), and removing only the child lock entry makes it drop the edge entirely. Wrote the lock entry with `npx npm@10 install` after removing the toast-ui + dompurify entries; npm 11 then keeps it. Noted in AGENTS.md.
+- [x] Dependabot: 10 open PRs, all dev-dependency majors. Taken locally: ts-helper 6.0.1, react-syntax-highlighter 16.1.1, and removed the unused `@babel/cli` from four manifests (nothing runs the babel binary) — commit `b2b147f`, supersedes #6 #7 #8.
+- [x] Vitest 0.34 → 4.1.11 (+ coverage-v8 4.1.11, vitest-canvas-mock 1.2.0) — commit `d522321`, supersedes #1 #2. `vite` pinned to 6.4.3 at the root: Vite 7/8 need Node 20.19+ (the floor is 20.10) and Storybook 9.1 accepts 6, so Storybook and Vitest share one Vite. Configs migrated (explicit `toFake` list reproducing the old timer set, `pool`/`maxWorkers`, `optimizer.client`); ResizeObserver/Image mocks became function implementations (Vitest 4 mocks are only constructible with function/class); the three nested `vi.mock` calls moved to module scope (an error in Vitest 5). Suites: core 387 (84% lines), cells 64, source 7, ai 126; Storybook builds on Vite 6.
+- [x] Not taken, each needs a decision or a migration: #3 Storybook 10 (all `@storybook/*` together), #4 eslint-plugin-unicorn 73 (needs ESLint 9 flat config), #5 faker 10 (story-data API rewrite + new visual baselines), #9/#10 linaria 8 + wyw-in-js 2 (must move the whole family incl. the runtime `@linaria/react`, and wyw 2 requires Node 22).
+- [x] `.claude/launch.json` committed (Storybook launch config for the desktop app), `settings.local.json` ignored — commit `26b6220`.
+- [ ] Push; CI (Build + React 18/19/latest matrix on Node 20.10, Visual, Storybook deploy); close the five untaken PRs with reasons; confirm Dependabot auto-closes the superseded five.

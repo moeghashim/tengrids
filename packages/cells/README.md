@@ -64,3 +64,7 @@ The ArticleCell uses `@toast-ui/editor` to provide its editor. To make sure it w
 ```
 import "@toast-ui/editor/dist/toastui-editor.css";
 ```
+
+### Security note
+
+`@toast-ui/editor` 3.2.2 (its last release, February 2023) bundles its own copy of DOMPurify **2.3.3** inside its dist files instead of importing the `dompurify` package it lists as a dependency. That inlined sanitizer is what runs when an `ArticleCell` renders markdown, and it predates several published DOMPurify advisories. Treat article content as trusted, or sanitize it yourself before it reaches the cell. Overriding the `dompurify` package version in your project (this repository does so with an npm `overrides` entry) only updates the unused on-disk copy: it silences `npm audit`, it does not change what runs.

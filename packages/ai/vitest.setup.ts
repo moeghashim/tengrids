@@ -4,11 +4,10 @@ import { vi } from "vitest";
 // this is needed to make the canvas mock work for some reason
 global.jest = vi;
 
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-    observe: jest.fn(),
-    unobserve: jest.fn(),
-    disconnect: jest.fn(),
-}));
+// Vitest 4 only lets `new` be used on a mock whose implementation is a `function` or a class.
+global.ResizeObserver = vi.fn(function ResizeObserverMock() {
+    return { observe: vi.fn(), unobserve: vi.fn(), disconnect: vi.fn() };
+}) as any;
 
 Image.prototype.decode = () => new Promise(resolve => window.setTimeout(resolve, 10));
 

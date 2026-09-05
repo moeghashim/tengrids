@@ -95,8 +95,9 @@
         "tsc-esm-fix": "^3.1.2",
         "typedoc": "^0.28.5",
         "typescript": "^5.8.3",
-        "vitest": "^0.34.6",
-        "vitest-canvas-mock": "^0.3.3",
+        "vite": "^6.4.3",
+        "vitest": "^4.1.11",
+        "vitest-canvas-mock": "^1.1.5",
         "webpack": "^5.99.9"
     },
     "overrides": {

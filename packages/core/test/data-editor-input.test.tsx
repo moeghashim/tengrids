@@ -216,13 +216,13 @@ const EventedDataEditor = React.forwardRef<DataEditorRef, DataEditorProps>((p, r
     );
 });
 
-describe("data-editor-input", () => {
-    vi.mock("../src/common/resize-detector", () => {
-        return {
-            useResizeDetector: () => ({ ref: undefined, width: 1000, height: 1000 }),
-        };
-    });
+vi.mock("../src/common/resize-detector", () => {
+    return {
+        useResizeDetector: () => ({ ref: undefined, width: 1000, height: 1000 }),
+    };
+});
 
+describe("data-editor-input", () => {
     beforeEach(() => {
         standardBeforeEach();
 

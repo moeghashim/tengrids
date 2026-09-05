@@ -7,6 +7,7 @@ tengrids is a fork of [glideapps/glide-data-grid](https://github.com/glideapps/g
 - **Node 20.10+** (pinned in `.nvmrc`; newer versions work — the suite passes on Node 24). That is the only prerequisite: all build/version/test-matrix tooling is a Node CLI at `scripts/cli.mjs` (no bash, no jq, works on Windows).
 - `packages/cells`, `packages/source`, and `packages/ai` tests import core's **built** `dist/` — build core first (`npm run build -w packages/core`) or their suites fail to resolve `tengrids`.
 - The devcontainer config is stale (Node 14) — don't trust it; use `.nvmrc`.
+- `vite` is pinned to the 6.x line in the root `package.json` on purpose: Vitest 4 would otherwise pull Vite 8, and Vite 7+ requires Node 20.19+, above this repo's floor. Storybook 9.1 accepts Vite 6, so both tools share one copy. Raise the floor in `.nvmrc` and the workflows before removing the pin (the same floor blocks linaria 8 / wyw-in-js 2, which need Node 22).
 
 ## Commands
 

@@ -156,7 +156,7 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 - Orchestration: Grok 4.6 (via `pi`, Orca pane) executed PR1; GPT Astra (Codex `gpt-6-astra` medium, Orca pane) reviewed in four rounds (10 findings → approve); Claude Fable 5.1 reviewed in two rounds (10 + 5 findings) and signed off on `9245638`; Moe merged as `5bd0363` (merge commit, PR #11).
 - Real bugs caught in review: batched `onCellEdited` calls overwrote each other (core dispatches paste/fill edits synchronously); ISO dates rolled over (`2026-02-30` → March 2); `print()` emitted unquoted keys and callback stubs; the `InferRow` type test never ran under `tsc`; `col.enum({ multiple: boolean })` inferred a scalar; `normalizeUri` accepted `javascript://`; the visual job built only core before Storybook; `cli version` pinned only core.
 - Process notes: Codex in a pane needs approvals for `gh` outside the sandbox and for writes outside the worktree (send `p`/`a`); pi resumes a headless session interactively with the same `--session-id`; DCO app fails PRs without `Signed-off-by` — decision pending (merge went through since DCO is not a required check).
-- PR1 CI on the merge commit: pending (see next entry).
+- PR1 CI on the merge commit `5bd0363`: Build ✓, Visual regression ✓, Storybook deploy ✓. Sign-off convention added: `git commit -s` (Signed-off-by: Moe Ghashim) on every agent commit, so the DCO check passes from PR2 on.
 - Branch: `main` · Actor: Claude Fable 5.1
 
 ### PR2 feat/filters — IN PROGRESS
@@ -174,6 +174,13 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 - Review round 5: deleted matchTextFast; compare() uses a module-level Intl.Collator; Number raw path requires Number.isFinite; Infinity + Thai LC_ALL child-process differential. Isolated B1 ~97 ms.
 - Review round 6: hoist prepareClause into filter-spec (parsed + folds); matchesClause = matchesPreparedClause; cellText/lower once per (row, column); no per-clause asNumber(b). Isolated B1 ~44 ms.
 
+
+### PR2 feat/filters — MERGED
+- Orchestration: Grok 4.6 (pi) executed; GPT Astra (Codex) reviewed in seven rounds (14 findings → approve on `aef975e`, confirmed with a 42,900-comparison differential check); Claude Fable 5.1 reviewed in six rounds and signed off; Moe merged as `fd3ed44` (PR #12).
+- Bugs caught in review: the AI-chips story crashed on load (`onSpec(undefined)` reached `setSpec`); `urlStore` leaked a global `popstate` listener and an inline store re-subscribed every render; `setClause` mutated from captured state; `URLSearchParams.toString()` made the 'readable' URL unreadable; a clear button nested inside the chip button; range editing under OR; multi-enum facet vs match mismatch; B1 flaked on CI (560 → 302 → 140 ms after pre-parsing clauses and a cached `Intl.Collator`).
+- Adjudication: any hand-written shortcut that predicts `localeCompare` leaks (Thai punctuation collation, Turkish i, Infinity); the evaluator now runs the identical comparator via `prepareClause` / `matchesPreparedClause`, and `matchesClause` is defined on top of them.
+- PR2 CI on the merge commit `fd3ed44`: Build ✓, Visual regression ✓ (nine baselines incl. the three rail themes), Storybook deploy ✓ (Extra Packages/Filters live on Pages).
+- Branch: `main` · Actor: Claude Fable 5.1
 
 ### PR3 feat/mcp — IN PROGRESS
 - Starting PR3: tengrids-mcp stdio server, docs-bundle, skill, and agent docs plumbing (§7, X1 for mcp, C1–C6).

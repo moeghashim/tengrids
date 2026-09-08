@@ -1,0 +1,7 @@
+import{R as e}from"./iframe-gtUd2ThD.js";import{D as n}from"./data-editor-all-BDmbvInp.js";import{u as i,d as m,B as c,D as p}from"./utils-suV3M9is.js";import{S as u}from"./story-utils-R7FeDyC8.js";import"./preload-helper-Dp1pzeXC.js";import"./image-window-loader-8z6v7mDR.js";import"./throttle-CUoaKfhD.js";import"./marked.esm-CWskPn-N.js";import"./flatten-DH73lhJo.js";import"./scrolling-data-grid-Dy2wBT_0.js";import"./isArray-DlVmPg05.js";import"./throttle--dN168Gr.js";const _={title:"Glide-Data-Grid/DataEditor Demos",decorators:[t=>e.createElement(u,null,e.createElement(c,{title:"100 Million Rows",description:e.createElement(p,null,"100 million rows is silly. Once we cross about 33 million pixels in height we can no longer trust the browser to scroll accurately.")},e.createElement(t,null)))]},r=()=>{const{cols:t,getCellContent:a}=i(6);return e.createElement(n,{...m,getCellContent:a,columns:t,rowHeight:31,rows:1e8,rowMarkers:"number"})};var o,s,l;r.parameters={...r.parameters,docs:{...(o=r.parameters)==null?void 0:o.docs,source:{originalSource:`() => {
+  const {
+    cols,
+    getCellContent
+  } = useMockDataGenerator(6);
+  return <DataEditor {...defaultProps} getCellContent={getCellContent} columns={cols} rowHeight={31} rows={100_000_000} rowMarkers="number" />;
+}`,...(l=(s=r.parameters)==null?void 0:s.docs)==null?void 0:l.source}}};const k=["SillyNumbers"];export{r as SillyNumbers,k as __namedExportsOrder,_ as default};

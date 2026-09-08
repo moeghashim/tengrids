@@ -1,0 +1,7 @@
+import{R as e}from"./iframe-gtUd2ThD.js";import{D as s}from"./data-editor-all-BDmbvInp.js";import{u as i,d as c,B as m,D as p,P as u}from"./utils-suV3M9is.js";import{S as g}from"./story-utils-R7FeDyC8.js";import"./preload-helper-Dp1pzeXC.js";import"./image-window-loader-8z6v7mDR.js";import"./throttle-CUoaKfhD.js";import"./marked.esm-CWskPn-N.js";import"./flatten-DH73lhJo.js";import"./scrolling-data-grid-Dy2wBT_0.js";import"./isArray-DlVmPg05.js";import"./throttle--dN168Gr.js";const w={title:"Glide-Data-Grid/DataEditor Demos",decorators:[r=>e.createElement(g,null,e.createElement(m,{title:"Prevent Diagonal Scroll",description:e.createElement(e.Fragment,null,e.createElement(p,null,"Diagonal scrolling can be prevented by setting"," ",e.createElement(u,null,"preventDiagonalScrolling"),"."))},e.createElement(r,null)))]},t=()=>{const{cols:r,getCellContent:n}=i(200);return e.createElement(s,{...c,getCellContent:n,columns:r,preventDiagonalScrolling:!0,rows:5e3})};var o,a,l;t.parameters={...t.parameters,docs:{...(o=t.parameters)==null?void 0:o.docs,source:{originalSource:`() => {
+  const {
+    cols,
+    getCellContent
+  } = useMockDataGenerator(200);
+  return <DataEditor {...defaultProps} getCellContent={getCellContent} columns={cols} preventDiagonalScrolling={true} rows={5000} />;
+}`,...(l=(a=t.parameters)==null?void 0:a.docs)==null?void 0:l.source}}};const x=["PreventDiagonalScroll"];export{t as PreventDiagonalScroll,x as __namedExportsOrder,w as default};

@@ -7,7 +7,7 @@ import { columnsFromFields, evaluateGridFilters, clauseMatchesField, type Facet 
 import { isOpAllowed } from "./ops.js";
 import { memoryStore, type FilterStore } from "./store.js";
 
-declare const process: { env: { NODE_ENV?: string } } | undefined;
+declare const process: { env: { NODE_ENV?: string } };
 
 const DEFAULT_MAX_ROWS = 50_000;
 const EMPTY_SPEC: FilterSpec = { clauses: [] };
@@ -55,7 +55,15 @@ function identityIndex(row: number): number {
 
 function rejectOp(key: string, op: string, kind: string): void {
     // `process.env.NODE_ENV` must appear literally so bundlers can replace it.
-    if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
+    // After substitution the identifier `process` may be gone; an unreplaced
+    // browser access throws and is treated as development.
+    let prod = false;
+    try {
+        prod = process.env.NODE_ENV === "production";
+    } catch {
+        prod = false;
+    }
+    if (!prod) {
         throw new RangeError(`Filter op "${op}" is not allowed for field "${key}" (${kind})`);
     }
 }
@@ -75,10 +83,11 @@ export function useGridFilters(options: UseGridFiltersOptions): UseGridFiltersRe
 
     const [spec, setSpecState] = React.useState<FilterSpec>(() => store.get());
     React.useEffect(() => {
-        setSpecState(store.get());
-        return store.subscribe(() => {
+        const unsub = store.subscribe(() => {
             setSpecState(store.get());
         });
+        setSpecState(store.get());
+        return unsub;
     }, [store]);
 
     const columns = React.useMemo(() => columnsIn ?? columnsFromFields(fields), [columnsIn, fields]);

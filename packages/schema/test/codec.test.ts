@@ -2,8 +2,12 @@ import { describe, expect, it } from "vitest";
 import type { FilterClause, FilterOp, FilterSpec } from "../src/index.js";
 import { FILTER_OPS, fromQueryString, fromSearchParams, toQueryString, toSearchParams } from "../src/index.js";
 
-function roundTrip(spec: FilterSpec, param = "f"): FilterSpec {
+function roundTripQuery(spec: FilterSpec, param = "f"): FilterSpec {
     return fromQueryString(toQueryString(spec, param), param);
+}
+
+function roundTripParams(spec: FilterSpec, param = "f"): FilterSpec {
+    return fromSearchParams(toSearchParams(spec, param), param);
 }
 
 function normalize(spec: FilterSpec): FilterSpec {
@@ -37,9 +41,21 @@ describe("URL codec", () => {
         expect(fromQueryString("f=tags:in:a%2Cb", "f").clauses[0]?.value).toEqual(["a,b"]);
     });
 
+    it("URLSearchParams pair is lossless for a,b, city:id, and hi%20", () => {
+        const spec: FilterSpec = {
+            clauses: [
+                { column: "tags", op: "in", value: ["a,b"] },
+                { column: "city:id", op: "eq", value: "hi%20" },
+            ],
+        };
+        expect(normalize(roundTripParams(spec))).toEqual(normalize(spec));
+        expect(toSearchParams(spec, "f").getAll("f")[0]).toContain("%2C");
+    });
+
     it("normalizes a scalar in-value to an array", () => {
         const spec: FilterSpec = { clauses: [{ column: "status", op: "in", value: "draft" }] };
-        expect(roundTrip(spec).clauses[0]?.value).toEqual(["draft"]);
+        expect(roundTripQuery(spec).clauses[0]?.value).toEqual(["draft"]);
+        expect(roundTripParams(spec).clauses[0]?.value).toEqual(["draft"]);
     });
 
     it("defaults conjunction to and by omitting the companion param", () => {
@@ -53,7 +69,7 @@ describe("URL codec", () => {
             const value: FilterClause["value"] =
                 op === "empty" || op === "notEmpty" ? undefined : op === "in" ? ["a", "b"] : "v";
             const spec: FilterSpec = { clauses: [{ column: "col", op, ...(value === undefined ? {} : { value }) }] };
-            expect(normalize(roundTrip(spec))).toEqual(normalize(spec));
+            expect(normalize(roundTripQuery(spec))).toEqual(normalize(spec));
         }
     });
 
@@ -66,7 +82,8 @@ describe("URL codec", () => {
                 { column: "tags", op: "in", value: ["a,b", "c:d", "🦄"] },
             ],
         };
-        expect(normalize(roundTrip(spec))).toEqual(normalize(spec));
+        expect(normalize(roundTripQuery(spec))).toEqual(normalize(spec));
+        expect(normalize(roundTripParams(spec))).toEqual(normalize(spec));
     });
 
     it("round-trips numbers, booleans, and quoted ambiguous strings", () => {
@@ -81,7 +98,7 @@ describe("URL codec", () => {
                 { column: "s", op: "eq", value: "1e+21" },
             ],
         };
-        expect(normalize(roundTrip(spec))).toEqual(normalize(spec));
+        expect(normalize(roundTripQuery(spec))).toEqual(normalize(spec));
     });
 
     it("ignores unknown keys and invalid ops rather than throwing", () => {
@@ -105,7 +122,7 @@ describe("URL codec", () => {
         const p = toSearchParams(spec, "filter");
         expect(p.getAll("filter")).toHaveLength(1);
         expect(p.get("filterx")).toBe("or");
-        expect(roundTrip(spec, "filter")).toEqual(normalize(spec));
+        expect(roundTripQuery(spec, "filter")).toEqual(normalize(spec));
     });
 
     it("property: encode ∘ decode is identity for ≥ 500 generated specs", () => {
@@ -123,7 +140,8 @@ describe("URL codec", () => {
                 clauses.push(makeClause(op, column, rand, strings));
             }
             const spec: FilterSpec = rand() < 0.3 ? { conjunction: "or", clauses } : { clauses };
-            expect(normalize(roundTrip(spec)), `spec ${i}`).toEqual(normalize(spec));
+            expect(normalize(roundTripQuery(spec)), `query spec ${i}`).toEqual(normalize(spec));
+            expect(normalize(roundTripParams(spec)), `params spec ${i}`).toEqual(normalize(spec));
             count++;
         }
         expect(count).toBe(500);

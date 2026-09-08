@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { GridCellKind, type GridCell, type GridColumn, type Item } from "tengrids";
 import { useColumnSort } from "tengrids-source";
 import type { FilterField, FilterSpec } from "../src/index.js";
-import { evaluateGridFilters, memoryStore, useGridFilters } from "../src/index.js";
+import { evaluateGridFilters, memoryStore, urlStore, useGridFilters } from "../src/index.js";
 
 const fields: FilterField[] = [
     { key: "name", title: "Name", kind: "text" },
@@ -145,15 +145,21 @@ describe("useGridFilters", () => {
         expect(store.get().clauses).toEqual([]);
     });
 
-    it("toSearchParams / fromSearchParams round-trip the spec", () => {
+    it("toSearchParams / fromSearchParams round-trip hostile values through the hook", () => {
         const data = [makeRow(0)];
         const { result } = renderHook(() => useGridFilters({ fields, columns, rows: 1, getCellContent: getter(data) }));
-        act(() => result.current.setClause("name", { column: "name", op: "contains", value: "n" }));
+        const hostile: FilterSpec = {
+            clauses: [
+                { column: "city:id", op: "eq", value: "hi%20" },
+                { column: "status", op: "in", value: ["a,b"] },
+            ],
+        };
+        act(() => result.current.setSpec(hostile));
         const params = result.current.toSearchParams();
         act(() => result.current.clear());
         expect(result.current.spec.clauses).toEqual([]);
         act(() => result.current.fromSearchParams(params));
-        expect(result.current.spec.clauses[0]).toMatchObject({ column: "name", op: "contains", value: "n" });
+        expect(result.current.spec.clauses).toEqual(hostile.clauses);
     });
 
     it("exposes truncated whenever facet evaluation is capped, even with an empty spec", () => {
@@ -183,20 +189,35 @@ describe("useGridFilters", () => {
         expect(result.current.spec.clauses).toEqual([]);
     });
 
-    it("no-ops a disallowed op when process is missing (browser production bundle)", () => {
-        const data = [makeRow(0)];
-        const { result } = renderHook(() => useGridFilters({ fields, columns, rows: 1, getCellContent: getter(data) }));
-        const saved = (globalThis as { process?: NodeJS.Process }).process;
-        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-        delete (globalThis as { process?: NodeJS.Process }).process;
-        try {
-            expect(() =>
-                result.current.setClause("cost", { column: "cost", op: "contains", value: "x" })
-            ).not.toThrow();
-            expect(result.current.spec.clauses).toEqual([]);
-        } finally {
-            (globalThis as { process?: NodeJS.Process }).process = saved;
-        }
+    it("transformed development code throws without a process global; production no-ops", () => {
+        // Bundlers replace the member expression `process.env.NODE_ENV` with a string.
+        const transformed = (literal: string) => {
+            const fn = new Function(`
+                let prod = false;
+                try { prod = ${JSON.stringify(literal)} === "production"; } catch { prod = false; }
+                if (!prod) throw new RangeError("disallowed");
+            `);
+            return fn;
+        };
+        expect(() => transformed("development")()).toThrow(RangeError);
+        expect(() => transformed("production")()).not.toThrow();
+    });
+
+    it("picks up URL changes that happened while the hook was unmounted", () => {
+        window.history.replaceState(null, "", "/?f=name:eq:old");
+        const store = urlStore({ param: "f" });
+        const data = [makeRow(0), makeRow(1)];
+        const first = renderHook(() =>
+            useGridFilters({ fields, columns, rows: 2, getCellContent: getter(data), store })
+        );
+        expect(first.result.current.spec.clauses[0]).toMatchObject({ column: "name", op: "eq", value: "old" });
+        first.unmount();
+        window.history.replaceState(null, "", "/?f=name:eq:new");
+        const second = renderHook(() =>
+            useGridFilters({ fields, columns, rows: 2, getCellContent: getter(data), store })
+        );
+        expect(second.result.current.spec.clauses).toEqual([{ column: "name", op: "eq", value: "new" }]);
+        window.history.replaceState(null, "", "/");
     });
 
     it("composes filter-then-sort with a non-identity permutation", () => {

@@ -168,4 +168,5 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 - Branch: `feat/filters` · Actor: Grok 4.6 via pi
 - PR: https://github.com/moeghashim/tengrids/pull/12 · last sha `9f679b0` (Linux rail baselines).
 - Review round 1 (Astra 14 + Fable 10): setSpec(undefined), store.get() mutations, lazy popstate, pinned inline urlStore, readable toQueryString, enum membership, range-under-OR, sibling clear + focus restore, truncated always when capped, stories tsc, AI integration test. B6 no longer crashes.
+- Review round 2 (Astra 5/11/15, Fable 1–3): NODE_ENV try/catch around literal process.env.NODE_ENV; lossless toSearchParams.append(encodeClause); subscribe then store.get() on mount.
 

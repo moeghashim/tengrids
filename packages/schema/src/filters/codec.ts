@@ -150,9 +150,18 @@ export function fromQueryString(search: string, param: string = DEFAULT_PARAM): 
     return or ? { conjunction: "or", clauses } : { clauses };
 }
 
-/** Encode a spec as one readable search param per clause (`status:in:draft,active`). */
+/**
+ * Programmatic pair: `append` so URLSearchParams double-escapes atom `%2C`/`%3A`.
+ * `getAll` then returns those sequences for `decodeClause` to unescape. Use
+ * `toQueryString` / `fromQueryString` for the readable URL bar.
+ */
 export function toSearchParams(spec: FilterSpec, param: string = DEFAULT_PARAM): URLSearchParams {
-    return new URLSearchParams(toQueryString(spec, param));
+    const params = new URLSearchParams();
+    for (const clause of spec.clauses) {
+        params.append(param, encodeClause(clause));
+    }
+    if (spec.conjunction === "or") params.set(conjunctionParam(param), "or");
+    return params;
 }
 
 /**

@@ -1,8 +1,10 @@
 # tengrids-ai changelog
 
-## 6.0.4-alpha26
+## Unreleased
 
 - `FilterOp`, `FilterClause`, `FilterSpec`, `evaluateFilter`, `matchesClause`, `findColumnIndex`, and `specColumns` now live in `tengrids-schema` and are re-exported unchanged from `tengrids-ai`.
+
+## 6.0.4-alpha26
 
 - Provider adapters via each vendor's official SDK (optional peers, loaded lazily): `createAnthropicProvider` (Claude; `difficulty` → effort; server-side refusal fallbacks), `createOpenAiProvider` / `createCodexProvider` (Responses API), `createGrokProvider`, `createOpenRouterProvider`, and `createOpenAiCompatibleProvider`. Keys accept a string or an async token getter.
 - `createRoutingProvider`: route by `difficulty` tier and by explicit `model`; `FEATURE_DIFFICULTY` defaults (search/paste low, bulk edit high, cells medium).

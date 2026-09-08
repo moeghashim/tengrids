@@ -145,13 +145,7 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 - Branch: `main` · Actor: Claude Fable 5.1
 
 ### PR1 feat/schema — IN PROGRESS
-- Starting PR1: tengrids-schema package skeleton, factories/generators/useSchemaGrid, FilterSpec move, stories/docs.
-- Branch: `feat/schema` · Actor: Grok 4.6 via pi
-
-### PR1 feat/schema — IN PROGRESS
-- Package builds and lints; 42 schema tests, 126 ai tests, 387 core, 64 cells, 7 source all green. FilterSpec moved with re-exports.
-- Branch: `feat/schema` · Actor: Grok 4.6 via pi
-
-### PR1 feat/schema — IN PROGRESS
-- Opened PR https://github.com/moeghashim/tengrids/pull/11 (A1–A7 green locally: schema 42, ai 126, core 387, cells 64, source 7).
+- Added `tengrids-schema` (`createSchema`, `col.*`, `InferRow`, `useSchemaGrid`, FilterSpec move with ai re-exports), stories, docs. Opened PR https://github.com/moeghashim/tengrids/pull/11.
+- Addressed Astra (10) and Fable (10) review findings: batched `onCellEdited`, calendar-validated dates, `print()` contract, `allowAdd`, widened flag inference, custom `readonly`, `tsc --noEmit` on tests, typed accessors, `schema.flags`, visual.yml/storybook paths, version pin of all workspace deps, URI allow-list, Unreleased changelogs. DCO (Fable 4) left for Moe.
+- Suites after review fixes: schema 48, ai 126, core 387, cells 64, source 7; `npm run build` green.
 - Branch: `feat/schema` · Actor: Grok 4.6 via pi

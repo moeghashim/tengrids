@@ -148,5 +148,6 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 - Added `tengrids-schema` (`createSchema`, `col.*`, `InferRow`, `useSchemaGrid`, FilterSpec move with ai re-exports), stories, docs. Opened PR https://github.com/moeghashim/tengrids/pull/11.
 - Round 1 reviews: batched edits, calendar dates, `allowAdd`, flags, `tsc --noEmit`, `schema.flags`, visual/storybook wiring, URI allow-list. DCO left for Moe.
 - Round 2: `print()` throws on callbacks and type-checks via the TS compiler API; `multiple: true` is required for array-only enums; `useSchemaGrid` restores getter identity and committed reads; `cli version` pins devDependencies; source README lists `RowToCell`/`RowEditedCallback`. Astra 8 accepted for PR1 (untyped callback row; README + Risks).
-- Suites: schema 53, ai 126, core 387, cells 64, source 7; `npm run build` green.
+- Round 3: `pendingRef` is cleared on a microtask at the end of one synchronous `onCellEdited` batch so a declined edit cannot leak into a later field update.
+- Suites: schema 54, ai 126, core 387, cells 64, source 7; `npm run build` green.
 - Branch: `feat/schema` · Actor: Grok 4.6 via pi

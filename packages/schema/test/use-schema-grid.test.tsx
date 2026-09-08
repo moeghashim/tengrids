@@ -258,4 +258,39 @@ describe("useSchemaGrid", () => {
         expect(ignored).toHaveBeenCalled();
         expect(controlled.current.getCellContent([0, 0])).toMatchObject({ data: "Row 0" });
     });
+
+    it("does not re-emit a declined field on a later edit after a microtask", async () => {
+        const initial = [makeRow(0)];
+        const originalName = initial[0].name;
+        const received: Row[][] = [];
+        const { result } = renderHook(() =>
+            useSchemaGrid(schema, initial, {
+                onRowsChange: next => {
+                    received.push(next as Row[]);
+                },
+            })
+        );
+        act(() => {
+            result.current.onCellEdited?.([0, 0], {
+                kind: GridCellKind.Text,
+                data: "RejectedName",
+                displayData: "RejectedName",
+                allowOverlay: true,
+            } satisfies TextCell);
+        });
+        expect(received[0]?.[0]?.name).toBe("RejectedName");
+        await Promise.resolve();
+        act(() => {
+            result.current.onCellEdited?.([1, 0], {
+                kind: GridCellKind.Number,
+                data: 99,
+                displayData: "99",
+                allowOverlay: true,
+            } satisfies NumberCell);
+        });
+        const last = received.at(-1);
+        expect(last?.[0]?.name).toBe(originalName);
+        expect(last?.[0]?.cost).toBe(99);
+        expect(received).toHaveLength(2);
+    });
 });

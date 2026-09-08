@@ -62,7 +62,13 @@ export function useSchemaGrid<S extends { readonly [K in keyof S]: ColumnDef }>(
             onRowChange?.(row, next);
             const copy = currentRows.slice();
             copy[row] = next;
+            const startingBatch = pendingRef.current === undefined;
             pendingRef.current = copy;
+            if (startingBatch) {
+                queueMicrotask(() => {
+                    pendingRef.current = undefined;
+                });
+            }
             onRowsChange?.(copy);
         },
         [schema, rows, readonly, onRowsChange, onRowChange]

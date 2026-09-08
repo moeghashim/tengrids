@@ -5,7 +5,7 @@ tengrids is a fork of [glideapps/glide-data-grid](https://github.com/glideapps/g
 ## Environment
 
 - **Node 20.10+** (pinned in `.nvmrc`; newer versions work — the suite passes on Node 24). That is the only prerequisite: all build/version/test-matrix tooling is a Node CLI at `scripts/cli.mjs` (no bash, no jq, works on Windows).
-- `packages/cells`, `packages/source`, and `packages/ai` tests import core's **built** `dist/` — build core first (`npm run build -w packages/core`) or their suites fail to resolve `tengrids`.
+- `packages/cells`, `packages/source`, `packages/schema`, and `packages/ai` tests import core's **built** `dist/` — build core first (`npm run build -w packages/core`) or their suites fail to resolve `tengrids`. `tengrids-ai` also needs `packages/schema/dist`.
 - The devcontainer config is stale (Node 14) — don't trust it; use `.nvmrc`.
 - `vite` is pinned to the 6.x line in the root `package.json` on purpose: Vitest 4 would otherwise pull Vite 8, and Vite 7+ requires Node 20.19+, above this repo's floor. Storybook 9.1 accepts Vite 6, so both tools share one copy. Raise the floor in `.nvmrc` and the workflows before removing the pin (the same floor blocks linaria 8 / wyw-in-js 2, which need Node 22).
 
@@ -18,11 +18,11 @@ All from the repo root unless noted:
 | Install | `npm install` | npm workspaces monorepo |
 | Core tests | `npm test` | 28 files / ~390 tests, ~10 s. Runs vitest in `packages/core` |
 | Single test file | `cd packages/core && npx vitest run test/copy-paste.test.ts` | |
-| Cells / source / ai tests | `npm run test-cells` / `npm run test-source` / `npm run test-ai` | ai: 106 tests, ~1 s |
+| Cells / source / schema / ai tests | `npm run test-cells` / `npm run test-source` / `npm run test-schema` / `npm run test-ai` | ai: 126 tests, ~1 s; schema: 48 |
 | React matrix | `npm run test-18` / `test-19` / `test-latest` | Swaps the installed React, runs core tests, then restores package.json + reinstalls (skipped in CI; `--no-restore` keeps the swap) |
 | Lint + cycle check | `npm run lint -w packages/core` | eslint + `ts-helper -c` dependency-cycle check |
 | Build all | `npm run build` | tsc ESM+CJS in parallel, linaria CSS extraction, `dist/index.css` — then lint. Per package: `npm run build -w packages/core` |
-| Version bump | `npm run cli -- version 6.1.0` | Sets the version in root + all packages and pins the workspace dep on core |
+| Version bump | `npm run cli -- version 6.1.0` | Sets the version in root + all packages and pins every workspace-to-workspace dependency |
 | Consumer projects | `npm run test-projects` | `npm ci` in `test-projects/*` and symlinks core into them |
 | Any CLI command | `npm run cli -- <build\|version\|test\|bootstrap>` | `node scripts/cli.mjs help` lists them |
 | Log progress | `npm run progress:append -- --title "…" --line "…"` | Appends under today's date in `progress.md`; `npm run progress:check` guards earlier days (also a CI step on PRs) |
@@ -36,6 +36,7 @@ CI gates on (`node.js.yml`): build, core tests with coverage, source tests, cell
 - `packages/core` — the grid (`tengrids`, ~32k lines). Everything below is about this package.
 - `packages/cells` — 13 optional `CustomRenderer` cells built on the public API. New cell types go here, not in core.
 - `packages/source` — hooks returning partial `DataEditorProps`: `useAsyncDataSource`, `useColumnSort`, `useUndoRedo`, `useCollapsingGroups`, `useMoveableColumns`.
+- `packages/schema` — `tengrids-schema`: `createSchema` / `col.*` / `useSchemaGrid` / `InferRow`, plus `FilterSpec` (moved from `tengrids-ai` with re-exports).
 - `packages/ai` — `tengrids-ai`: bring-your-own-model AI features (`AiProvider` seam + `AiScheduler`; `useAiCells`/`AiCellRenderer`, `useNaturalLanguageSearch`/`useNaturalLanguageFilter` via a query→FilterSpec compiler, `useAgentDataSource`, `useSmartPaste`/`coerceValue`, `useBulkEdit`). Pure hooks + one custom cell; no vendor SDKs, no linaria. Tests use `createMockProvider` with fake timers.
 
 ## Architecture map (packages/core/src)

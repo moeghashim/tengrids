@@ -11,14 +11,29 @@
 // and the documented `npm run ...` commands are unchanged.
 
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+    existsSync,
+    mkdirSync,
+    readdirSync,
+    readFileSync,
+    renameSync,
+    rmSync,
+    symlinkSync,
+    writeFileSync,
+} from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const PACKAGES = ["core", "cells", "source", "ai"];
+const PACKAGES = ["core", "cells", "source", "schema", "ai"];
 const CORE_PKG = "tengrids";
-const BANNER = { core: "Glide Data Grid", cells: "Glide Data Grid Cells", source: "Glide Data Grid Source", ai: "tengrids AI" };
+const BANNER = {
+    core: "Glide Data Grid",
+    cells: "Glide Data Grid Cells",
+    source: "Glide Data Grid Source",
+    schema: "tengrids Schema",
+    ai: "tengrids AI",
+};
 const cyan = s => `[0;36m${s}[0m`;
 
 // ---------------------------------------------------------------- helpers
@@ -37,7 +52,9 @@ function run(cmd, args, { cwd = REPO_ROOT, quietStdout = false } = {}) {
             shell: process.platform === "win32",
         });
         child.on("error", rej);
-        child.on("exit", code => (code === 0 ? res() : rej(new Error(`${cmd} ${args.slice(0, 3).join(" ")}… exited with ${code}`))));
+        child.on("exit", code =>
+            code === 0 ? res() : rej(new Error(`${cmd} ${args.slice(0, 3).join(" ")}… exited with ${code}`))
+        );
     });
 }
 
@@ -73,12 +90,27 @@ async function compile(pkgDir, kind) {
     const tmp = `dist/${kind}-tmp`;
     const dtsTmp = isEsm ? "dist/dts-tmp" : `dist/dts-${kind}-tmp`;
 
-    await run(bin("tsc"), ["-p", `tsconfig.${kind}.json`, "--outdir", `./${tmp}`, "--declarationDir", `./${dtsTmp}`], { cwd: pkgDir });
+    await run(bin("tsc"), ["-p", `tsconfig.${kind}.json`, "--outdir", `./${tmp}`, "--declarationDir", `./${dtsTmp}`], {
+        cwd: pkgDir,
+    });
 
     const jsFiles = walk(join(pkgDir, tmp), ".js").map(f => relative(pkgDir, f).split(sep).join("/"));
     await run(
         bin("wyw-in-js"),
-        ["-r", `${tmp}/`, "-m", "esnext", "-o", `${tmp}/`, ...jsFiles, "-t", "-i", tmp, "-c", "../../config/linaria.json"],
+        [
+            "-r",
+            `${tmp}/`,
+            "-m",
+            "esnext",
+            "-o",
+            `${tmp}/`,
+            ...jsFiles,
+            "-t",
+            "-i",
+            tmp,
+            "-c",
+            "../../config/linaria.json",
+        ],
         { cwd: pkgDir, quietStdout: true }
     );
 
@@ -117,16 +149,19 @@ async function buildPackage(name) {
 async function build(args) {
     const all = args.includes("--all");
     const names = all ? PACKAGES : args.filter(a => !a.startsWith("-"));
-    if (names.length === 0) throw new Error("build: specify packages (core, cells, source) or --all");
-    // cells, source, and ai compile against core's dist, so core goes first.
+    if (names.length === 0) throw new Error("build: specify packages (core, cells, source, schema, ai) or --all");
+    // cells, source, schema, and ai compile against core's dist, so core goes first.
+    // ai depends on schema's dist, so schema goes before the remaining packages.
     if (names.includes("core")) await buildPackage("core");
-    await Promise.all(names.filter(n => n !== "core").map(buildPackage));
+    const rest = names.filter(n => n !== "core");
+    if (rest.includes("schema")) await buildPackage("schema");
+    await Promise.all(rest.filter(n => n !== "schema").map(buildPackage));
 }
 
 // ---------------------------------------------------------------- version
 
 // Mirrors the old update-version.sh: propagate a version to the root and
-// every workspace package, and pin the workspace dependency on core.
+// every workspace package, and pin every workspace-to-workspace dependency.
 function version(args) {
     const rootPkgPath = join(REPO_ROOT, "package.json");
     const root = readJson(rootPkgPath);
@@ -136,11 +171,21 @@ function version(args) {
     writeJson(rootPkgPath, root);
     console.log(`package.json → ${next}`);
 
+    const workspaceNames = new Set(
+        PACKAGES.map(name => readJson(join(REPO_ROOT, "packages", name, "package.json")).name)
+    );
+
     for (const name of PACKAGES) {
         const p = join(REPO_ROOT, "packages", name, "package.json");
         const pkg = readJson(p);
         pkg.version = next;
-        if (pkg.dependencies?.[CORE_PKG] !== undefined) pkg.dependencies[CORE_PKG] = next;
+        for (const field of ["dependencies", "devDependencies", "peerDependencies"]) {
+            const bag = pkg[field];
+            if (bag === undefined) continue;
+            for (const dep of Object.keys(bag)) {
+                if (workspaceNames.has(dep)) bag[dep] = next;
+            }
+        }
         writeJson(p, pkg);
         console.log(`packages/${name}/package.json → ${next}`);
     }
@@ -164,11 +209,22 @@ async function test(args) {
     }
     if (!/^(\d+|latest)$/.test(react)) throw new Error(`--react expects a major version or "latest", got "${react}"`);
 
-    const snapshot = ["package.json", "package-lock.json"].map(f => [join(REPO_ROOT, f), readFileSync(join(REPO_ROOT, f), "utf8")]);
+    const snapshot = ["package.json", "package-lock.json"].map(f => [
+        join(REPO_ROOT, f),
+        readFileSync(join(REPO_ROOT, f), "utf8"),
+    ]);
     const userEvent = react === "18" ? "@testing-library/user-event@14.5.1" : "@testing-library/user-event@latest";
     const npm = process.platform === "win32" ? "npm.cmd" : "npm";
     try {
-        await run(npm, ["i", "-D", `react@${react}`, `react-dom@${react}`, "@testing-library/react@latest", userEvent, "@testing-library/dom"]);
+        await run(npm, [
+            "i",
+            "-D",
+            `react@${react}`,
+            `react-dom@${react}`,
+            "@testing-library/react@latest",
+            userEvent,
+            "@testing-library/dom",
+        ]);
         await run(bin("vitest"), ["run", ...passthrough], { cwd: coreDir });
     } finally {
         if (restore) {
@@ -190,7 +246,11 @@ async function bootstrap() {
         await run(npm, ["ci"], { cwd: dir });
         const link = join(dir, "node_modules", ...CORE_PKG.split("/"));
         rmSync(link, { recursive: true, force: true });
-        symlinkSync(relative(dirname(link), join(REPO_ROOT, "packages", "core")), link, process.platform === "win32" ? "junction" : "dir");
+        symlinkSync(
+            relative(dirname(link), join(REPO_ROOT, "packages", "core")),
+            link,
+            process.platform === "win32" ? "junction" : "dir"
+        );
         console.log(`${name}: linked ${CORE_PKG} → packages/core`);
     }
 }
@@ -199,7 +259,7 @@ async function bootstrap() {
 
 const HELP = `tengrids developer CLI
 
-  build <core|cells|source>... | --all   compile ESM + CJS, extract linaria CSS, emit dist/
+  build <core|cells|source|schema|ai>... | --all   compile ESM + CJS, extract linaria CSS, emit dist/
   version [newVersion]                    set the version across all workspace packages
   test [--react 18|19|latest] [--no-restore] [vitest args]
                                           run the core suite, optionally against another React

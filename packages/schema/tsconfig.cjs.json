@@ -9,13 +9,13 @@
         "./test/**/*.test.ts",
         "./test/**/*.test.tsx"
     ],
-    "references": [{ "path": "../core" }, { "path": "../schema" }],
+    "references": [{ "path": "../core" }],
     "compilerOptions": {
         "rootDir": "./src",
-        "outDir": "./dist/esm",
+        "outDir": "./dist/cjs",
         "declarationDir": "./dist/dts",
-        "sourceMap": true,
-        "declaration": true,
-        "declarationMap": true
+        "module": "Node16",
+        "verbatimModuleSyntax": false,
+        "sourceMap": true
     }
 }

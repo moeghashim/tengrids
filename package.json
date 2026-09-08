@@ -20,6 +20,7 @@
         "test-source": "cd packages/source && npm run test",
         "test-cells": "cd packages/cells && npm run test",
         "test-ai": "cd packages/ai && npm run test",
+        "test-schema": "cd packages/schema && npm run test",
         "test-projects": "node scripts/cli.mjs bootstrap",
         "progress:append": "node scripts/progress-log.mjs append",
         "progress:check": "node scripts/progress-append-only-check.mjs",
@@ -34,6 +35,7 @@
         "./packages/core",
         "./packages/cells",
         "./packages/source",
+        "./packages/schema",
         "./packages/ai"
     ],
     "devDependencies": {

@@ -1,7 +1,7 @@
 {
-    "name": "tengrids-ai",
+    "name": "tengrids-schema",
     "version": "6.0.4-alpha26",
-    "description": "AI features for tengrids: AI formula cells, natural-language search and filter, agent-fed data sources, smart paste, and bulk edits — bring your own model, with adapters for Claude, OpenAI/Codex, Grok, and OpenRouter",
+    "description": "Declarative schema, cell generators, and FilterSpec for tengrids",
     "sideEffects": false,
     "type": "module",
     "browser": "dist/esm/index.js",
@@ -19,53 +19,40 @@
         "dist"
     ],
     "scripts": {
-        "build": "node ../../scripts/cli.mjs build ai",
-        "lint": "eslint src --ext .ts,.tsx",
+        "build": "node ../../scripts/cli.mjs build schema",
+        "lint": "eslint src --ext .ts,.tsx && ts-helper -p ./tsconfig.json -r ./src/index.ts -c --package-regex packages/core && tsc --noEmit -p tsconfig.json",
         "test": "vitest"
     },
     "repository": {
         "type": "git",
         "url": "git+https://github.com/moeghashim/tengrids.git",
-        "directory": "packages/ai"
+        "directory": "packages/schema"
     },
-    "homepage": "https://github.com/moeghashim/tengrids/tree/main/packages/ai",
+    "homepage": "https://github.com/moeghashim/tengrids/tree/main/packages/schema",
     "author": "Moe Ghashim",
     "license": "MIT",
     "keywords": [
         "react",
         "datagrid",
         "data-grid",
-        "ai",
-        "llm",
-        "agent",
-        "natural-language",
+        "schema",
+        "filter",
         "canvas"
     ],
     "dependencies": {
-        "tengrids": "6.0.4-alpha26",
-        "tengrids-schema": "6.0.4-alpha26"
+        "tengrids": "6.0.4-alpha26"
     },
     "peerDependencies": {
         "react": "^16.12.0 || 17.x || 18.x || 19.x",
-        "react-dom": "^16.12.0 || 17.x || 18.x || 19.x",
-        "@anthropic-ai/sdk": "^0.123.0",
-        "openai": "^7.10.0"
+        "react-dom": "^16.12.0 || 17.x || 18.x || 19.x"
     },
     "devDependencies": {
-        "@anthropic-ai/sdk": "^0.123.0",
+        "tengrids-source": "6.0.4-alpha26",
+        "@glideapps/ts-helper": "6.0.1",
         "eslint": "^8.57.1",
         "eslint-plugin-import": "^2.31.0",
         "eslint-plugin-react": "^7.37.5",
         "eslint-plugin-react-hooks": "^5.2.0",
-        "openai": "^7.10.0",
         "typescript": "^5.8.3"
-    },
-    "peerDependenciesMeta": {
-        "@anthropic-ai/sdk": {
-            "optional": true
-        },
-        "openai": {
-            "optional": true
-        }
     }
 }

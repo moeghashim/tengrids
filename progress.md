@@ -184,3 +184,7 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 - Implemented tengrids-mcp (stdio, BM25 search, scaffold via createSchema/print, check_setup, --refresh allow-list), docs-bundle (103 docs, generates llms-full.txt), skills/tengrids, CI test-mcp + C2.
 - Suites: mcp 69, schema 131, ai 128, cells 64, source 7, core 387. npm run build green. Live --refresh: 102 ok, 1 fallback (mcp README not on main yet). C2 tsc --noEmit ok on ScaffoldGrid.tsx in next-gdg (React 17); Next wrapper omitted from tsc because hoisted @types/react 19 clashes with Next 12 JSX.
 - Branch: `feat/mcp` · Actor: Grok 4.6 via pi
+
+### PR3 feat/mcp — IN PROGRESS
+- PR: https://github.com/moeghashim/tengrids/pull/13 · last sha 5e2c603 · base main (PR2 merged as fd3ed44). C5: npx skills add https://github.com/moeghashim/tengrids#feat/mcp --skill tengrids works; /tree/feat/mcp/… is parsed as branch feat.
+- Branch: `feat/mcp` · Actor: Grok 4.6 via pi

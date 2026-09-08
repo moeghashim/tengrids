@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `useNaturalLanguageFilter` accepts `onSpec?: (spec: FilterSpec | undefined) => void`, called when the compiled spec changes (wire to `useGridFilters().setSpec` so AI results appear as chips).
+
 - `FilterOp`, `FilterClause`, `FilterSpec`, `evaluateFilter`, `matchesClause`, `findColumnIndex`, and `specColumns` now live in `tengrids-schema` and are re-exported unchanged from `tengrids-ai`.
 
 ## 6.0.4-alpha26

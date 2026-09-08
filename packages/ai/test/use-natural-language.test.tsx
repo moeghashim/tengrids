@@ -5,7 +5,11 @@ import { useNaturalLanguageSearch } from "../src/use-natural-language-search.js"
 import { useNaturalLanguageFilter } from "../src/use-natural-language-filter.js";
 import { createMockProvider } from "../src/provider.js";
 
-const columns: GridColumn[] = [{ title: "Name", width: 1 }, { title: "Dept", width: 1 }, { title: "Age", width: 1 }];
+const columns: GridColumn[] = [
+    { title: "Name", width: 1 },
+    { title: "Dept", width: 1 },
+    { title: "Age", width: 1 },
+];
 const data = [
     ["Ada", "Engineering", 36],
     ["Grace", "Engineering", 45],
@@ -19,7 +23,13 @@ const getCellContent = ([col, row]: Item): GridCell => {
         : { kind: GridCellKind.Text, data: v, displayData: v, allowOverlay: false };
 };
 const rows = data.length;
-const engineersOver30 = JSON.stringify({ conjunction: "and", clauses: [{ column: "Dept", op: "eq", value: "Engineering" }, { column: "Age", op: "gt", value: 30 }] });
+const engineersOver30 = JSON.stringify({
+    conjunction: "and",
+    clauses: [
+        { column: "Dept", op: "eq", value: "Engineering" },
+        { column: "Age", op: "gt", value: 30 },
+    ],
+});
 
 describe("useNaturalLanguageSearch", () => {
     beforeEach(() => vi.useFakeTimers());
@@ -27,7 +37,9 @@ describe("useNaturalLanguageSearch", () => {
 
     it("returns literal matches instantly, then the compiled filter's matches", async () => {
         const provider = createMockProvider(() => engineersOver30);
-        const { result } = renderHook(() => useNaturalLanguageSearch({ provider, columns, rows, getCellContent, debounceMs: 100 }));
+        const { result } = renderHook(() =>
+            useNaturalLanguageSearch({ provider, columns, rows, getCellContent, debounceMs: 100 })
+        );
         expect(result.current.searchResults).toEqual([]);
         act(() => result.current.onSearchValueChange!("engineers over 30"));
         expect(result.current.status).toBe("compiling");
@@ -42,14 +54,22 @@ describe("useNaturalLanguageSearch", () => {
         expect(result.current.spec?.clauses).toHaveLength(2);
         expect(result.current.matchedRows).toEqual([0, 1]);
         // highlighted cells are the clause columns of each matched row
-        expect(result.current.searchResults).toEqual([[1, 0], [2, 0], [1, 1], [2, 1]]);
+        expect(result.current.searchResults).toEqual([
+            [1, 0],
+            [2, 0],
+            [1, 1],
+            [2, 1],
+        ]);
     });
 
     it("literal search works with no provider and finds the matching cells", () => {
         const { result } = renderHook(() => useNaturalLanguageSearch({ columns, rows, getCellContent }));
         act(() => result.current.onSearchValueChange!("eng"));
         expect(result.current.status).toBe("literal");
-        expect(result.current.searchResults).toEqual([[1, 0], [1, 1]]);
+        expect(result.current.searchResults).toEqual([
+            [1, 0],
+            [1, 1],
+        ]);
         act(() => result.current.setSearchValue(""));
         expect(result.current.searchResults).toEqual([]);
         expect(result.current.status).toBe("idle");
@@ -57,7 +77,9 @@ describe("useNaturalLanguageSearch", () => {
 
     it("aborts a superseded compile and caches specs per query", async () => {
         const provider = createMockProvider(() => engineersOver30, { delayMs: 50 });
-        const { result } = renderHook(() => useNaturalLanguageSearch({ provider, columns, rows, getCellContent, debounceMs: 10 }));
+        const { result } = renderHook(() =>
+            useNaturalLanguageSearch({ provider, columns, rows, getCellContent, debounceMs: 10 })
+        );
         act(() => result.current.onSearchValueChange!("first query"));
         await act(async () => {
             await vi.advanceTimersByTimeAsync(20); // debounce elapsed, model call in flight
@@ -82,7 +104,9 @@ describe("useNaturalLanguageSearch", () => {
 
     it("falls back to literal results when the model fails or answers nonsense", async () => {
         const nonsense = createMockProvider(() => "I have no idea");
-        const a = renderHook(() => useNaturalLanguageSearch({ provider: nonsense, columns, rows, getCellContent, debounceMs: 0 }));
+        const a = renderHook(() =>
+            useNaturalLanguageSearch({ provider: nonsense, columns, rows, getCellContent, debounceMs: 0 })
+        );
         act(() => a.result.current.onSearchValueChange!("ops"));
         await act(async () => {
             await vi.advanceTimersByTimeAsync(0);
@@ -91,8 +115,14 @@ describe("useNaturalLanguageSearch", () => {
         expect(a.result.current.error).toMatch(/usable filter/);
         expect(a.result.current.searchResults).toEqual([[1, 2]]);
 
-        const failing = { complete: async () => { throw new Error("down"); } };
-        const b = renderHook(() => useNaturalLanguageSearch({ provider: failing, columns, rows, getCellContent, debounceMs: 0 }));
+        const failing = {
+            complete: async () => {
+                throw new Error("down");
+            },
+        };
+        const b = renderHook(() =>
+            useNaturalLanguageSearch({ provider: failing, columns, rows, getCellContent, debounceMs: 0 })
+        );
         act(() => b.result.current.onSearchValueChange!("ops"));
         await act(async () => {
             await vi.advanceTimersByTimeAsync(0);
@@ -125,9 +155,12 @@ describe("useNaturalLanguageFilter", () => {
 
     it("hides non-matching rows and remaps cells and indices", async () => {
         const provider = createMockProvider(() => engineersOver30);
-        const { result, rerender } = renderHook(({ query }) => useNaturalLanguageFilter({ provider, columns, rows, getCellContent, query, debounceMs: 0 }), {
-            initialProps: { query: "" },
-        });
+        const { result, rerender } = renderHook(
+            ({ query }) => useNaturalLanguageFilter({ provider, columns, rows, getCellContent, query, debounceMs: 0 }),
+            {
+                initialProps: { query: "" },
+            }
+        );
         rerender({ query: "engineers over 30" });
         await act(async () => {
             await vi.advanceTimersByTimeAsync(0);
@@ -139,5 +172,32 @@ describe("useNaturalLanguageFilter", () => {
         rerender({ query: "sales" }); // literal path while compiling; the mock still returns the engineering spec afterwards
         expect(result.current.rows).toBe(1);
         expect(result.current.getCellContent([0, 0])).toMatchObject({ data: "Mia" });
+    });
+
+    it("calls onSpec with the compiled spec and undefined when the query is cleared", async () => {
+        const onSpec = vi.fn();
+        const provider = createMockProvider(() => engineersOver30);
+        const { rerender } = renderHook(
+            ({ query }) =>
+                useNaturalLanguageFilter({ provider, columns, rows, getCellContent, query, debounceMs: 0, onSpec }),
+            { initialProps: { query: "" } }
+        );
+        expect(onSpec).toHaveBeenCalledWith(undefined);
+        onSpec.mockClear();
+        rerender({ query: "engineers over 30" });
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(0);
+        });
+        expect(onSpec).toHaveBeenCalled();
+        const spec = onSpec.mock.calls.at(-1)?.[0];
+        expect(spec?.clauses).toHaveLength(2);
+        const callsAfterCompile = onSpec.mock.calls.length;
+        rerender({ query: "engineers over 30" });
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(0);
+        });
+        expect(onSpec.mock.calls.length).toBe(callsAfterCompile);
+        rerender({ query: "" });
+        expect(onSpec).toHaveBeenLastCalledWith(undefined);
     });
 });

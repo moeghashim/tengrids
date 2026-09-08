@@ -20,6 +20,7 @@ export {
     REFRESH_REQUEST_MS,
     REFRESH_TOTAL_MS,
     REFRESH_CONCURRENCY,
+    type RefreshOptions,
 } from "./refresh.js";
 export {
     EXAMPLE_SCHEMA,

@@ -4,10 +4,13 @@ import {
     GITHUB_ORIGIN,
     PAGES_ORIGIN,
     REFRESH_REQUEST_MS,
+    REFRESH_TOTAL_MS,
     refreshBundle,
     urlsFor,
 } from "../src/refresh.js";
 import { loadFixture } from "./helpers.js";
+
+const FAST = { requestTimeoutMs: 50, totalTimeoutMs: 400 };
 
 describe("refresh origins", () => {
     it("allows the Pages origin under /tengrids/", () => {
@@ -84,42 +87,51 @@ describe("refresh fallback", () => {
         expect(result.bundle.docs.map(d => d.id)).toEqual(bundle.docs.map(d => d.id));
     });
 
-    it("aborts a stalled header fetch and keeps the bundle copy", async () => {
+    it("aborts a stalled header fetch that ignores AbortSignal", async () => {
         const bundle = { version: "1", docs: [loadFixture().docs[0]] };
-        const result = await refreshBundle(bundle, (_url, init) => {
-            return new Promise((resolve, reject) => {
-                const timer = setTimeout(() => resolve({ ok: true, status: 200, text: async () => "late" }), 30_000);
-                init?.signal?.addEventListener("abort", () => {
-                    clearTimeout(timer);
-                    reject(Object.assign(new Error("aborted"), { name: "AbortError" }));
-                });
-            });
-        });
+        const result = await refreshBundle(bundle, () => new Promise(() => undefined), FAST);
         expect(result.refreshed).toBe(0);
         expect(result.failed).toBe(1);
         expect(result.bundle.docs[0]?.text).toBe(bundle.docs[0]?.text);
         expect(REFRESH_REQUEST_MS).toBe(5000);
-    }, 15_000);
+        expect(REFRESH_TOTAL_MS).toBe(20_000);
+    });
 
-    it("keeps successful docs when a sibling times out", async () => {
+    it("aborts a stalled body read that ignores AbortSignal", async () => {
+        const bundle = { version: "1", docs: [loadFixture().docs[0]] };
+        const result = await refreshBundle(
+            bundle,
+            async () => ({
+                ok: true,
+                status: 200,
+                text: () => new Promise(() => undefined),
+            }),
+            FAST
+        );
+        expect(result.refreshed).toBe(0);
+        expect(result.failed).toBe(1);
+        expect(result.bundle.docs[0]?.text).toBe(bundle.docs[0]?.text);
+    });
+
+    it("keeps successful docs when a sibling ignores the signal", async () => {
         const fixture = loadFixture();
         const bundle = { version: "1", docs: [fixture.docs[0], fixture.docs[1]] };
-        const result = await refreshBundle(bundle, (url, init) => {
-            if (url.includes("API.md")) {
-                return Promise.resolve({
-                    ok: true,
-                    status: 200,
-                    text: async () => "# API reference\n\n## HTML/CSS Prerequisites\n\nmixed ok\n",
-                });
-            }
-            return new Promise((_resolve, reject) => {
-                init?.signal?.addEventListener("abort", () => {
-                    reject(Object.assign(new Error("aborted"), { name: "AbortError" }));
-                });
-            });
-        });
+        const result = await refreshBundle(
+            bundle,
+            url => {
+                if (url.includes("API.md")) {
+                    return Promise.resolve({
+                        ok: true,
+                        status: 200,
+                        text: async () => "# API reference\n\n## HTML/CSS Prerequisites\n\nmixed ok\n",
+                    });
+                }
+                return new Promise(() => undefined);
+            },
+            FAST
+        );
         expect(result.refreshed).toBeGreaterThanOrEqual(1);
         expect(result.bundle.docs[0]?.text).toContain("mixed ok");
         expect(result.bundle.docs[1]?.text).toBe(bundle.docs[1]?.text);
-    }, 15_000);
+    });
 });

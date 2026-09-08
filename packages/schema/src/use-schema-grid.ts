@@ -31,37 +31,48 @@ export function useSchemaGrid<S extends { readonly [K in keyof S]: ColumnDef }>(
     rows: readonly InferRow<GridSchema<S>>[],
     options: UseSchemaGridOptions<InferRow<GridSchema<S>>> = {}
 ): Pick<DataEditorProps, "columns" | "rows" | "getCellContent" | "onCellEdited" | "getCellsForSelection"> {
+    type Row = InferRow<GridSchema<S>>;
     const { onRowsChange, onRowChange, readonly } = options;
     const columns = React.useMemo(() => schema.columns(), [schema]);
 
+    const rowsRef = React.useRef(rows);
+    const pendingRef = React.useRef<Row[] | undefined>(undefined);
+    if (pendingRef.current !== undefined && rows === pendingRef.current) {
+        rowsRef.current = pendingRef.current;
+    } else {
+        rowsRef.current = rows;
+        pendingRef.current = undefined;
+    }
+
     const getCellContent = React.useCallback(
         ([col, row]: Item): GridCell => {
-            const current = rows[row];
+            const current = (pendingRef.current ?? rowsRef.current)[row];
             if (current === undefined) return LOADING;
             const cell = schema.toCell(current, col);
             return readonly === true ? freezeCell(cell) : cell;
         },
-        [schema, rows, readonly]
+        [schema, readonly]
     );
 
     const onCellEdited = React.useCallback(
         (cell: Item, newVal: EditableGridCell): void => {
             if (readonly === true) return;
             const [, row] = cell;
-            const current = rows[row];
+            const currentRows = pendingRef.current ?? rowsRef.current;
+            const current = currentRows[row];
             if (current === undefined) return;
             const key = schema.keys[cell[0]];
             if (key === undefined) return;
             const next = schema.applyEdit(current, key, newVal);
             if (next === undefined) return;
             onRowChange?.(row, next);
-            if (onRowsChange !== undefined) {
-                const copy = rows.slice();
-                copy[row] = next;
-                onRowsChange(copy);
-            }
+            const copy = currentRows.slice();
+            copy[row] = next;
+            pendingRef.current = copy;
+            rowsRef.current = copy;
+            onRowsChange?.(copy);
         },
-        [schema, rows, readonly, onRowsChange, onRowChange]
+        [schema, readonly, onRowsChange, onRowChange]
     );
 
     const getCellsForSelection = React.useCallback(

@@ -30,7 +30,21 @@ export interface SharedColumnOptions<TValue = unknown> {
     readonly sortable?: boolean;
     readonly filterable?: boolean;
     /** Read path for nested data. Edits still write `{ ...row, [key]: value }`. */
-    readonly accessor?: (row: unknown) => TValue;
+    readonly accessor?: (row: never) => TValue;
+}
+
+/** `on` / `off` for literal flags; `maybe` when the flag is widened (`boolean` or optional `true`). */
+export type FlagTri<F> = [F] extends [true] ? "on" : [F] extends [false | undefined] ? "off" : "maybe";
+
+export type InferBooleanValue<F> = FlagTri<F> extends "off" ? boolean : boolean | undefined;
+
+export type InferEnumValue<T extends string, F> =
+    FlagTri<F> extends "on" ? readonly T[] : FlagTri<F> extends "off" ? T : T | readonly T[];
+
+export interface ColumnFlags {
+    readonly sortable: boolean;
+    readonly filterable: boolean;
+    readonly readonly: boolean;
 }
 
 export interface TextColumnOptions extends SharedColumnOptions<string> {
@@ -76,8 +90,9 @@ export interface ImageColumnOptions extends SharedColumnOptions<readonly string[
 export type MarkdownColumnOptions = SharedColumnOptions<string>;
 
 export interface CustomColumnOptions<TValue> extends SharedColumnOptions<TValue> {
-    readonly toCell: (rowValue: TValue, row: unknown) => GridCell;
-    readonly fromCell: (cell: GridCell, row: unknown) => TValue | undefined;
+    /** May return any `GridCell` (broader than §5.2's Custom) so a custom column can reuse built-in kinds. */
+    readonly toCell: (rowValue: TValue, row: never) => GridCell;
+    readonly fromCell: (cell: GridCell, row: never) => TValue | undefined;
     readonly filter?: FilterKind;
 }
 
@@ -103,8 +118,8 @@ export interface ColumnDef<TValue = unknown> extends SharedColumnOptions<TValue>
     readonly displayAsLink?: boolean;
     readonly allowAdd?: boolean;
     readonly rounding?: number;
-    readonly toCell?: (rowValue: never, row: unknown) => GridCell;
-    readonly fromCell?: (cell: GridCell, row: unknown) => unknown;
+    readonly toCell?: (rowValue: never, row: never) => GridCell;
+    readonly fromCell?: (cell: GridCell, row: never) => unknown;
     readonly filter?: FilterKind;
     readonly __value?: TValue;
 }
@@ -136,5 +151,6 @@ export interface GridSchema<S extends { readonly [K in keyof S]: ColumnDef } = S
     applyEdit<K extends keyof S & string>(row: RowOf<S>, key: K, cell: GridCell): RowOf<S> | undefined;
     readonly onEdited: SchemaOnEdited<RowOf<S>>;
     filterFields(): readonly FilterField[];
+    flags(key: keyof S & string): ColumnFlags;
     print(): string;
 }

@@ -13,7 +13,9 @@ export {
 export type {
     BooleanColumnOptions,
     ColumnDef,
+    ColumnFlags,
     ColumnKind,
+    FlagTri,
     CustomColumnOptions,
     DateColumnOptions,
     DateFormat,
@@ -22,6 +24,8 @@ export type {
     FilterKind,
     GridSchema,
     ImageColumnOptions,
+    InferBooleanValue,
+    InferEnumValue,
     InferRow,
     MarkdownColumnOptions,
     NumberColumnOptions,

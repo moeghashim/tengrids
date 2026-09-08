@@ -1,3 +1,4 @@
+import * as React from "react";
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { GridCellKind, type BooleanCell, type NumberCell, type TextCell } from "tengrids";
@@ -124,6 +125,12 @@ describe("useSchemaGrid", () => {
                 displayData: "not-a-date",
                 allowOverlay: true,
             });
+            result.current.onCellEdited?.([3, 0], {
+                kind: GridCellKind.Text,
+                data: "2026-02-30",
+                displayData: "2026-02-30",
+                allowOverlay: true,
+            });
         });
         expect(onRowsChange).not.toHaveBeenCalled();
         expect(rows[0].cost).toBe(0);
@@ -162,5 +169,36 @@ describe("useSchemaGrid", () => {
         });
         expect(onRowChange).not.toHaveBeenCalled();
         expect(result.current.getCellContent([0, 0])).toMatchObject({ readonly: true, allowOverlay: false });
+    });
+
+    it("accumulates two edits in one act against a real setState (same row and across rows)", () => {
+        const { result } = renderHook(() => {
+            const [rows, setRows] = React.useState<readonly Row[]>(() => [makeRow(0), makeRow(1)]);
+            const grid = useSchemaGrid(schema, rows, { onRowsChange: setRows });
+            return { grid, rows };
+        });
+        act(() => {
+            result.current.grid.onCellEdited?.([1, 0], {
+                kind: GridCellKind.Number,
+                data: 42,
+                displayData: "42",
+                allowOverlay: true,
+            } satisfies NumberCell);
+            result.current.grid.onCellEdited?.([4, 0], {
+                kind: GridCellKind.Boolean,
+                data: true,
+                allowOverlay: false,
+            } satisfies BooleanCell);
+            result.current.grid.onCellEdited?.([0, 1], {
+                kind: GridCellKind.Text,
+                data: "Other",
+                displayData: "Other",
+                allowOverlay: true,
+            } satisfies TextCell);
+        });
+        expect(result.current.rows[0].cost).toBe(42);
+        expect(result.current.rows[0].paid).toBe(true);
+        expect(result.current.rows[0].name).toBe("Row 0");
+        expect(result.current.rows[1].name).toBe("Other");
     });
 });

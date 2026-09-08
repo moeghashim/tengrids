@@ -12,7 +12,7 @@ export const REJECT = Symbol("reject");
 export type Reject = typeof REJECT;
 
 function readRaw(def: ColumnDef, row: object, key: string): unknown {
-    if (def.accessor !== undefined) return def.accessor(row);
+    if (def.accessor !== undefined) return def.accessor(row as never);
     return (row as Record<string, unknown>)[key];
 }
 
@@ -162,7 +162,7 @@ export function valueToCell(def: ColumnDef, row: object, key: string): GridCell 
                 displayData: data,
                 allowOverlay: overlay(readonly),
                 readonly,
-                hoverEffect: def.hoverEffect ?? def.displayAsLink,
+                hoverEffect: def.hoverEffect ?? (def.displayAsLink === true ? true : undefined),
             };
         }
         case "image": {
@@ -187,7 +187,15 @@ export function valueToCell(def: ColumnDef, row: object, key: string): GridCell 
             if (def.toCell === undefined) {
                 return { kind: GridCellKind.Loading, allowOverlay: false };
             }
-            return def.toCell(value as never, row);
+            const cell = def.toCell(value as never, row as never);
+            if (readonly === true && cell.kind !== GridCellKind.Loading && cell.kind !== GridCellKind.Protected) {
+                if (cell.kind === GridCellKind.Boolean) return { ...cell, readonly: true, allowOverlay: false };
+                if (cell.kind === GridCellKind.Bubble || cell.kind === GridCellKind.Drilldown) {
+                    return { ...cell, allowOverlay: false };
+                }
+                return { ...cell, readonly: true, allowOverlay: false };
+            }
+            return cell;
         }
         default:
             return { kind: GridCellKind.Loading, allowOverlay: false };
@@ -225,8 +233,15 @@ function parseDate(text: string): Date | undefined | Reject {
     if (s === "") return undefined;
     const isoDateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
     if (isoDateOnly !== null) {
-        const d = new Date(Number(isoDateOnly[1]), Number(isoDateOnly[2]) - 1, Number(isoDateOnly[3]));
-        return Number.isNaN(d.getTime()) ? REJECT : d;
+        const year = Number(isoDateOnly[1]);
+        const month = Number(isoDateOnly[2]);
+        const day = Number(isoDateOnly[3]);
+        if (month < 1 || month > 12 || day < 1 || day > 31) return REJECT;
+        const d = new Date(0);
+        d.setFullYear(year, month - 1, day);
+        d.setHours(0, 0, 0, 0);
+        if (d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day) return REJECT;
+        return d;
     }
     const t = Date.parse(s);
     if (Number.isNaN(t)) return REJECT;
@@ -236,7 +251,8 @@ function parseDate(text: string): Date | undefined | Reject {
 function normalizeUri(text: string): string | Reject {
     const s = text.trim();
     if (s === "") return "";
-    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(s) || /^(mailto|tel):/i.test(s)) return s;
+    if (/^(javascript|data|vbscript|file):/i.test(s)) return REJECT;
+    if (/^https?:\/\//i.test(s) || /^(mailto|tel):/i.test(s)) return s;
     if (/^[\w.-]+\.[a-z]{2,}(\/\S*)?$/i.test(s)) return `https://${s}`;
     if (/^[\w.+-]+@[\w-]+\.[a-z]{2,}$/i.test(s)) return `mailto:${s}`;
     return REJECT;
@@ -264,7 +280,7 @@ function coerceNumber(cell: GridCell, min: number | undefined, max: number | und
     return n;
 }
 
-export function cellToValue(def: ColumnDef, cell: GridCell, row: object): unknown | Reject {
+export function cellToValue(def: ColumnDef, cell: GridCell, row: object, key: string): unknown | Reject {
     switch (def.kind) {
         case "text": {
             const s = (cell.kind === GridCellKind.Text ? cell.data : cellText(cell)).trim();
@@ -317,18 +333,25 @@ export function cellToValue(def: ColumnDef, cell: GridCell, row: object): unknow
             return normalizeUri(raw);
         }
         case "image": {
-            if (cell.kind === GridCellKind.Image) return cell.data;
-            const parts = cellText(cell)
-                .split(/[\s,;]+/)
-                .map(p => p.trim())
-                .filter(p => p !== "");
-            return parts;
+            const next =
+                cell.kind === GridCellKind.Image
+                    ? cell.data
+                    : cellText(cell)
+                          .split(/[\s,;]+/)
+                          .map(p => p.trim())
+                          .filter(p => p !== "");
+            if (def.allowAdd === false) {
+                const prev = readRaw(def, row, key);
+                const prevLen = Array.isArray(prev) ? prev.length : 0;
+                if (next.length > prevLen) return REJECT;
+            }
+            return next;
         }
         case "markdown":
             return cell.kind === GridCellKind.Markdown ? cell.data : cellText(cell);
         case "custom": {
             if (def.fromCell === undefined) return REJECT;
-            const next = def.fromCell(cell, row);
+            const next = def.fromCell(cell, row as never);
             if (next === undefined) return REJECT;
             return next;
         }

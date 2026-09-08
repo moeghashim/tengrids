@@ -11,6 +11,7 @@ import {
     type BubbleCell,
     type CustomCell,
 } from "tengrids";
+import type { RowEditedCallback, RowToCell } from "tengrids-source";
 import { col, createSchema, type InferRow } from "../src/index.js";
 
 const example = createSchema({
@@ -227,6 +228,29 @@ describe("col.date", () => {
             })
         ).toBeUndefined();
     });
+    it("rejects invalid calendar dates, non-leap Feb 29, and still accepts leap days", () => {
+        const s = createSchema({ due: col.date() });
+        const current = { due: undefined as Date | undefined };
+        const edit = (data: string) =>
+            s.applyEdit(current, "due", {
+                kind: GridCellKind.Text,
+                data,
+                displayData: data,
+                allowOverlay: true,
+            });
+        expect(edit("2026-02-30")).toBeUndefined();
+        expect(edit("2026-00-01")).toBeUndefined();
+        expect(edit("2026-13-01")).toBeUndefined();
+        expect(edit("2025-02-29")).toBeUndefined();
+        const leap = edit("2024-02-29");
+        expect(leap?.due?.getFullYear()).toBe(2024);
+        expect(leap?.due?.getMonth()).toBe(1);
+        expect(leap?.due?.getDate()).toBe(29);
+        const yearOne = edit("0001-01-02");
+        expect(yearOne?.due?.getFullYear()).toBe(1);
+        expect(yearOne?.due?.getMonth()).toBe(0);
+        expect(yearOne?.due?.getDate()).toBe(2);
+    });
     it("formats datetime and relative", () => {
         const s = createSchema({
             at: col.date({ format: "datetime" }),
@@ -281,19 +305,50 @@ describe("col.uri", () => {
         expect(
             s.applyEdit({ site: "" }, "site", { ...cell, data: "not a url", displayData: "not a url" })
         ).toBeUndefined();
+        expect(
+            s.applyEdit({ site: "" }, "site", {
+                ...cell,
+                data: "javascript://%0aalert(1)",
+                displayData: "javascript://%0aalert(1)",
+            })
+        ).toBeUndefined();
+        expect(
+            s.applyEdit({ site: "" }, "site", { ...cell, data: "data:text/html,hi", displayData: "data:text/html,hi" })
+        ).toBeUndefined();
         expect(s.applyEdit({ site: "x" }, "site", { ...cell, data: "", displayData: "" })).toEqual({ site: "" });
+    });
+    it("lets an explicit hoverEffect win over displayAsLink", () => {
+        const s = createSchema({
+            a: col.uri({ hoverEffect: false, displayAsLink: true }),
+            b: col.uri({ displayAsLink: true }),
+        });
+        expect((s.cell({ a: "https://a.example", b: "https://b.example" }, "a") as UriCell).hoverEffect).toBe(false);
+        expect((s.cell({ a: "https://a.example", b: "https://b.example" }, "b") as UriCell).hoverEffect).toBe(true);
     });
 });
 
 describe("col.image", () => {
-    it("renders Image cells and accepts url arrays", () => {
-        const s = createSchema({ pics: col.image({ rounding: 8, allowAdd: true }) });
-        const cell = s.cell({ pics: ["https://a.example/x.png"] }, "pics") as ImageCell;
+    it("renders Image cells and allowAdd controls whether the list can grow", () => {
+        const add = createSchema({ pics: col.image({ rounding: 8, allowAdd: true }) });
+        const noAdd = createSchema({ pics: col.image({ allowAdd: false }) });
+        const cell = add.cell({ pics: ["https://a.example/x.png"] }, "pics") as ImageCell;
         expect(cell.kind).toBe(GridCellKind.Image);
         expect(cell.rounding).toBe(8);
-        expect(s.applyEdit({ pics: [] }, "pics", { ...cell, data: ["https://b.example/y.png"] })).toEqual({
+        expect(add.applyEdit({ pics: [] }, "pics", { ...cell, data: ["https://b.example/y.png"] })).toEqual({
             pics: ["https://b.example/y.png"],
         });
+        expect(
+            noAdd.applyEdit({ pics: ["https://a.example/x.png"] }, "pics", {
+                ...cell,
+                data: ["https://a.example/x.png", "https://b.example/y.png"],
+            })
+        ).toBeUndefined();
+        expect(
+            noAdd.applyEdit({ pics: ["https://a.example/x.png"] }, "pics", {
+                ...cell,
+                data: ["https://b.example/y.png"],
+            })
+        ).toEqual({ pics: ["https://b.example/y.png"] });
     });
 });
 
@@ -330,6 +385,24 @@ describe("col.custom", () => {
         expect(s.applyEdit({ n: 7 }, "n", { ...cell, data: { n: 8 } })).toEqual({ n: 8 });
         expect(s.applyEdit({ n: 7 }, "n", { ...cell, data: { n: "x" } })).toBeUndefined();
     });
+    it("applies shared readonly to the generated custom cell", () => {
+        const s = createSchema({
+            n: col.custom<number>({
+                readonly: true,
+                toCell: (v): GridCell => ({
+                    kind: GridCellKind.Custom,
+                    data: { n: v },
+                    copyData: String(v),
+                    allowOverlay: true,
+                }),
+                fromCell: (): number | undefined => 1,
+            }),
+        });
+        const cell = s.cell({ n: 7 }, "n") as CustomCell;
+        expect(cell.readonly).toBe(true);
+        expect(cell.allowOverlay).toBe(false);
+        expect(s.applyEdit({ n: 7 }, "n", cell)).toBeUndefined();
+    });
 });
 
 describe("readonly and accessor", () => {
@@ -341,7 +414,7 @@ describe("readonly and accessor", () => {
     });
     it("reads nested values through accessor", () => {
         const s = createSchema({
-            city: col.text({ accessor: (r: unknown) => (r as { address: { city: string } }).address.city }),
+            city: col.text({ accessor: (r: { address: { city: string } }) => r.address.city }),
         });
         const nested = { city: "ignored", address: { city: "Paris" } };
         expect((s.cell(nested, "city") as TextCell).data).toBe("Paris");
@@ -361,12 +434,6 @@ describe("readonly and accessor", () => {
 
 describe("toCell / onEdited", () => {
     it("matches useAsyncDataSource RowToCell / RowEditedCallback without adapters (A4)", () => {
-        type RowToCell<T> = (row: T, col: number) => GridCell;
-        type RowEditedCallback<T> = (
-            cell: import("tengrids").Item,
-            newVal: import("tengrids").EditableGridCell,
-            rowData: T
-        ) => T | undefined;
         const toCell: RowToCell<ExampleRow> = example.toCell;
         const onEdited: RowEditedCallback<ExampleRow> = example.onEdited;
         expect(toCell(row, 0).kind).toBe(GridCellKind.Text);
@@ -439,6 +506,47 @@ describe("print", () => {
         expect(src).toContain("site: col.uri(");
         expect(src).toContain("notes: col.markdown(");
         expect(src).toContain("readonly: true");
+        const js = src.replace(/ as const/g, "");
+        const recreate = new Function("createSchema", "col", `"use strict"; return (${js});`) as (
+            cs: typeof createSchema,
+            c: typeof col
+        ) => typeof example;
+        const again = recreate(createSchema, col);
+        expect([...again.keys]).toEqual([...example.keys]);
+        expect(again.columns().map(c => c.id)).toEqual(example.columns().map(c => c.id));
+    });
+    it("quotes non-identifier keys, keeps filterable/sortable false, and stubs callbacks", () => {
+        const s = createSchema({
+            "first-name": col.text({ filterable: false, sortable: false }),
+            extra: col.custom<string>({
+                toCell: (v): GridCell => ({ kind: GridCellKind.Text, data: v, displayData: v, allowOverlay: true }),
+                fromCell: c => (c.kind === GridCellKind.Text ? c.data : undefined),
+            }),
+        });
+        const src = s.print();
+        expect(src).toContain('"first-name": col.text({ filterable: false, sortable: false })');
+        expect(src).toContain("toCell: /* toCell */");
+        expect(src).toContain("fromCell: /* fromCell */");
+        const recreate = new Function("createSchema", "col", `"use strict"; return (${src});`) as (
+            cs: typeof createSchema,
+            c: typeof col
+        ) => ReturnType<typeof createSchema>;
+        const again = recreate(createSchema, col);
+        expect([...again.keys]).toEqual(["first-name", "extra"]);
+        expect(again.flags("first-name")).toEqual({ sortable: false, filterable: false, readonly: false });
+    });
+});
+
+describe("flags", () => {
+    it("defaults sortable and filterable to true and readonly to false", () => {
+        const s = createSchema({
+            a: col.text(),
+            b: col.text({ sortable: true, filterable: true }),
+            c: col.text({ sortable: false, filterable: false, readonly: true }),
+        });
+        expect(s.flags("a")).toEqual({ sortable: true, filterable: true, readonly: false });
+        expect(s.flags("b")).toEqual({ sortable: true, filterable: true, readonly: false });
+        expect(s.flags("c")).toEqual({ sortable: false, filterable: false, readonly: true });
     });
 });
 

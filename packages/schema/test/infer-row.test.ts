@@ -27,6 +27,18 @@ type Assert<T extends true> = T;
 
 export type _InferRowMatchesDocumentedType = Assert<Equal<Row, Expected>>;
 
+const widenedEnumOpts: { values: readonly ["a", "b"]; multiple: boolean } = { values: ["a", "b"], multiple: true };
+const widenedBoolOpts: { allowIndeterminate: boolean } = { allowIndeterminate: true };
+const widened = createSchema({
+    tags: col.enum(widenedEnumOpts),
+    flag: col.boolean(widenedBoolOpts),
+    maybe: col.boolean({ allowIndeterminate: true as boolean | undefined }),
+});
+type Widened = InferRow<typeof widened>;
+export type _WidenedEnum = Assert<Equal<Widened["tags"], "a" | "b" | readonly ("a" | "b")[]>>;
+export type _WidenedBool = Assert<Equal<Widened["flag"], boolean | undefined>>;
+export type _OptionalTrueBool = Assert<Equal<Widened["maybe"], boolean | undefined>>;
+
 describe("InferRow type-level contract (A1)", () => {
     it("assigns the documented row shape", () => {
         const row: Row = {

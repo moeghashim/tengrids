@@ -1,7 +1,7 @@
 import type { EditableGridCell, GridCell, GridColumn, Item, LoadingCell } from "tengrids";
 import { GridCellKind } from "tengrids";
 import { cellToValue, REJECT, valueToCell } from "./convert.js";
-import type { ColumnDef, FilterField, FilterKind, GridSchema } from "./types.js";
+import type { ColumnDef, ColumnFlags, FilterField, FilterKind, GridSchema } from "./types.js";
 
 const FACTORY_NAME: Record<ColumnDef["kind"], string> = {
     text: "text",
@@ -66,7 +66,11 @@ function printLiteral(value: unknown): string | undefined {
     return undefined;
 }
 
-const SKIP_PRINT = new Set(["kind", "__value", "accessor", "toCell", "fromCell", "sortable", "filterable"]);
+const SKIP_PRINT = new Set(["kind", "__value"]);
+
+function printIdent(key: string): string {
+    return /^[A-Za-z_$][\w$]*$/.test(key) ? key : JSON.stringify(key);
+}
 
 function printOptions(key: string, def: ColumnDef): string {
     const entries: string[] = [];
@@ -76,6 +80,20 @@ function printOptions(key: string, def: ColumnDef): string {
         if (value === undefined) continue;
         if (optionKey === "title" && value === key) continue;
         if (optionKey === "id" && value === key) continue;
+        if (optionKey === "accessor") {
+            entries.push(`accessor: /* accessor */ (row) => row[${JSON.stringify(key)}]`);
+            continue;
+        }
+        if (optionKey === "toCell") {
+            entries.push(
+                `toCell: /* toCell */ (value, _row) => ({ kind: "custom", data: value, copyData: String(value ?? ""), allowOverlay: true })`
+            );
+            continue;
+        }
+        if (optionKey === "fromCell") {
+            entries.push(`fromCell: /* fromCell */ (cell, _row) => (cell.kind === "custom" ? cell.data : undefined)`);
+            continue;
+        }
         if (typeof value === "function") continue;
         const printed = printLiteral(value);
         if (printed === undefined) continue;
@@ -93,8 +111,8 @@ function filterKindFor(def: ColumnDef): FilterKind | undefined {
 
 export function createSchema<S extends { readonly [K in keyof S]: ColumnDef }>(defs: S): GridSchema<S> {
     const keys = Object.freeze(Object.keys(defs)) as readonly (keyof S & string)[];
-    let columnsCache: GridColumn[] | undefined;
-    let fieldsCache: FilterField[] | undefined;
+    let columnsCache: readonly GridColumn[] | undefined;
+    let fieldsCache: readonly FilterField[] | undefined;
     let printCache: string | undefined;
 
     const cell = <K extends keyof S & string>(row: { [P in keyof S]: unknown }, key: K): GridCell => {
@@ -117,7 +135,7 @@ export function createSchema<S extends { readonly [K in keyof S]: ColumnDef }>(d
         const def = defs[key];
         if (def === undefined) return undefined;
         if (def.readonly === true) return undefined;
-        const nextValue = cellToValue(def, edited, row);
+        const nextValue = cellToValue(def, edited, row, key);
         if (nextValue === REJECT) return undefined;
         return { ...row, [key]: nextValue };
     };
@@ -135,7 +153,7 @@ export function createSchema<S extends { readonly [K in keyof S]: ColumnDef }>(d
     const schema: GridSchema<S> = {
         keys,
         columns(): readonly GridColumn[] {
-            columnsCache ??= keys.map(key => toGridColumn(key, defs[key]));
+            columnsCache ??= Object.freeze(keys.map(key => toGridColumn(key, defs[key])));
             return columnsCache;
         },
         cell: cell as GridSchema<S>["cell"],
@@ -158,8 +176,16 @@ export function createSchema<S extends { readonly [K in keyof S]: ColumnDef }>(d
                     ...(def.multiple !== undefined ? { multiple: def.multiple } : {}),
                 });
             }
-            fieldsCache = fields;
+            fieldsCache = Object.freeze(fields);
             return fields;
+        },
+        flags(key: keyof S & string): ColumnFlags {
+            const def = defs[key];
+            return {
+                sortable: def.sortable !== false,
+                filterable: def.filterable !== false,
+                readonly: def.readonly === true,
+            };
         },
         print(): string {
             if (printCache !== undefined) return printCache;
@@ -167,7 +193,7 @@ export function createSchema<S extends { readonly [K in keyof S]: ColumnDef }>(d
                 const def = defs[key];
                 const factory = FACTORY_NAME[def.kind];
                 const opts = printOptions(key, def);
-                return `    ${key}: col.${factory}(${opts}),`;
+                return `    ${printIdent(key)}: col.${factory}(${opts}),`;
             });
             printCache = `createSchema({\n${lines.join("\n")}\n})`;
             return printCache;

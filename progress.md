@@ -130,3 +130,10 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 - [x] Not taken, each needs a decision or a migration: #3 Storybook 10 (all `@storybook/*` together), #4 eslint-plugin-unicorn 73 (needs ESLint 9 flat config), #5 faker 10 (story-data API rewrite + new visual baselines), #9/#10 linaria 8 + wyw-in-js 2 (must move the whole family incl. the runtime `@linaria/react`, and wyw 2 requires Node 22).
 - [x] `.claude/launch.json` committed (Storybook launch config for the desktop app), `settings.local.json` ignored — commit `26b6220`.
 - [x] Pushed as `98db23e`…`75a7e51`. CI green on `75a7e51`: Build ✓ (build + test-react-18/19/latest on Node 20.10, so Vitest 4 + Vite 6 run on the documented floor), Visual regression ✓ (six baselines unchanged), Storybook deploy ✓. Closed #3 #4 #5 #9 #10 with the reasons above; Dependabot auto-closed #1 #2 #6 #7 #8 as superseded — 0 open PRs.
+
+## 2026-09-08
+
+### PRD: schema, faceted filters, agent access — DRAFTED
+- [x] Compared tengrids with openstatusHQ/data-table-filters (DOM filter/UX layer on TanStack Table, shadcn registry blocks, nuqs/zustand stores, AI filter inference, MCP docs endpoint, agent skill). Verdict: complementary layers; three ideas worth borrowing.
+- [x] Wrote `docs/prd/schema-filters-agent-access.md`: (A) `tengrids-schema` with `createSchema`/`col.*` factories, `InferRow`, generators for columns/cells/edits/filter fields, and the FilterSpec model moving out of `tengrids-ai` with re-exports; (B) `useGridFilters` + facets + memory/URL stores + a `FilterRail` styled by `--gdg-*` vars, with the NL filter writing into the same state via a new `onSpec`; (C) `tengrids-mcp` stdio server (bundled docs, search, examples, scaffold, setup check) and an installable `skills/tengrids` skill. Four PRs, acceptance criteria per feature, and an execution protocol: Grok implements, GPT Astra reviews, Claude Fable 5.1 reviews and signs off, Moe merges and publishes. Target `6.0.4-alpha27`; four open questions for Moe in §12.
+

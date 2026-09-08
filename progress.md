@@ -151,3 +151,7 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 ### PR1 feat/schema — IN PROGRESS
 - Package builds and lints; 42 schema tests, 126 ai tests, 387 core, 64 cells, 7 source all green. FilterSpec moved with re-exports.
 - Branch: `feat/schema` · Actor: Grok 4.6 via pi
+
+### PR1 feat/schema — IN PROGRESS
+- Opened PR https://github.com/moeghashim/tengrids/pull/11 (A1–A7 green locally: schema 42, ai 126, core 387, cells 64, source 7).
+- Branch: `feat/schema` · Actor: Grok 4.6 via pi

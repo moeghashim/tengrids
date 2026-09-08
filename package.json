@@ -21,6 +21,8 @@
         "test-cells": "cd packages/cells && npm run test",
         "test-ai": "cd packages/ai && npm run test",
         "test-projects": "node scripts/cli.mjs bootstrap",
+        "progress:append": "node scripts/progress-log.mjs append",
+        "progress:check": "node scripts/progress-append-only-check.mjs",
         "visual": "playwright test",
         "visual:update": "playwright test --update-snapshots",
         "visual:docker": "docker run --rm --ipc=host -v \"$PWD\":/work -w /work mcr.microsoft.com/playwright:v1.62.1-noble npx playwright test"

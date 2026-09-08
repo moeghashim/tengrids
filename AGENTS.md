@@ -25,6 +25,7 @@ All from the repo root unless noted:
 | Version bump | `npm run cli -- version 6.1.0` | Sets the version in root + all packages and pins the workspace dep on core |
 | Consumer projects | `npm run test-projects` | `npm ci` in `test-projects/*` and symlinks core into them |
 | Any CLI command | `npm run cli -- <build\|version\|test\|bootstrap>` | `node scripts/cli.mjs help` lists them |
+| Log progress | `npm run progress:append -- --title "…" --line "…"` | Appends under today's date in `progress.md`; `npm run progress:check` guards earlier days (also a CI step on PRs) |
 | Storybook | `npm start` | Port 9009; ~60 examples double as the docs and manual test surface |
 | Visual regression | `npx storybook build -o storybook-build && npm run visual:docker` | Screenshots 6 stories inside the Playwright Docker image and diffs them against `visual/__snapshots__` (see gotcha 4) |
 
@@ -80,6 +81,12 @@ Cell system: cells are data objects (`GridCellKind.*` in `internal/data-grid/dat
 - ESLint is strict-ish (sonarjs, unicorn, react-hooks, `no-floating-promises` as error) and `tsconfig.json` is fully `strict` with `noUnusedLocals`/`noUnusedParameters` — expect the compiler to complain about dead code.
 - Import cycles fail the lint (`ts-helper -c`).
 - New cell renderers with heavy dependencies belong in `packages/cells`, code-split via `React.lazy` where possible (per upstream CONTRIBUTING.md).
+
+## Agent workflow
+
+- `progress.md` at the repo root is the running log: every piece of work is appended under the current date as it happens (`npm run progress:append -- --title "…" --status "IN PROGRESS" --line "…"`). Today's section may be edited; earlier dated sections are frozen and `npm run progress:check` (pre-commit or `--base origin/main` in CI) rejects rewrites. Read the last two dated sections before starting a task.
+- Roles, prompts, and the review gate are in `docs/agent-workflow.md` and `agent/prompts/` (`pickup`, `execute-pr`, `review-pr`, `signoff-pr`, `handoff`). Feature work is specified in `docs/prd/*.md` first; a PR that implements something not in its PRD gets `request changes`.
+- Commits are authored as Moe Ghashim `<mohanadgh@gmail.com>` with a `Co-Authored-By:` trailer naming the agent that produced them.
 
 ## Fork notes
 

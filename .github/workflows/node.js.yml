@@ -10,6 +10,8 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
             - name: Use Node.js 20
               uses: actions/setup-node@v4
               with:
@@ -21,6 +23,9 @@ jobs:
             - run: npm run test-cells
             - run: npm run test-ai
             - run: npm run test-projects
+            - name: progress.md is append-only for past days
+              if: github.event_name == 'pull_request'
+              run: node scripts/progress-append-only-check.mjs --base origin/${{ github.base_ref }}
             - name: Coveralls
               uses: coverallsapp/github-action@master
               with:

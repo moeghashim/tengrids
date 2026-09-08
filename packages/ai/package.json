@@ -1,7 +1,7 @@
 {
     "name": "tengrids-ai",
     "version": "6.0.4-alpha26",
-    "description": "AI features for tengrids: AI formula cells, natural-language search and filter, agent-fed data sources, smart paste, and bulk edits \u2014 bring your own model, with adapters for Claude, OpenAI/Codex, Grok, and OpenRouter",
+    "description": "AI features for tengrids: AI formula cells, natural-language search and filter, agent-fed data sources, smart paste, and bulk edits — bring your own model, with adapters for Claude, OpenAI/Codex, Grok, and OpenRouter",
     "sideEffects": false,
     "type": "module",
     "browser": "dist/esm/index.js",
@@ -42,7 +42,8 @@
         "canvas"
     ],
     "dependencies": {
-        "tengrids": "6.0.4-alpha26"
+        "tengrids": "6.0.4-alpha26",
+        "tengrids-schema": "6.0.4-alpha26"
     },
     "peerDependencies": {
         "react": "^16.12.0 || 17.x || 18.x || 19.x",

@@ -9,7 +9,7 @@
         "./test/**/*.test.ts",
         "./test/**/*.test.tsx"
     ],
-    "references": [{ "path": "../core" }],
+    "references": [{ "path": "../core" }, { "path": "../schema" }],
     "compilerOptions": {
         "rootDir": "./src",
         "outDir": "./dist/cjs",

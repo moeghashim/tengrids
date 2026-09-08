@@ -15,7 +15,10 @@ function isDocEntry(value: unknown): value is DocEntry {
         if (typeof h !== "object" || h === null) return false;
         const heading = h as Record<string, unknown>;
         return (
-            typeof heading.heading === "string" && typeof heading.text === "string" && typeof heading.level === "number"
+            typeof heading.heading === "string" &&
+            typeof heading.text === "string" &&
+            typeof heading.level === "number" &&
+            (heading.storyId === undefined || typeof heading.storyId === "string")
         );
     });
 }

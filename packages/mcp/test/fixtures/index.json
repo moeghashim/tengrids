@@ -68,6 +68,7 @@
                 {
                     "heading": "FreezeColumns",
                     "level": 2,
+                    "storyId": "glide-data-grid-dataeditor-demos--freeze-columns",
                     "text": "export const FreezeColumns = () => null;\n// freezeColumns example\n"
                 }
             ],

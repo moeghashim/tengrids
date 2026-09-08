@@ -23,6 +23,7 @@ import {
 } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { storyNameFromExport, toId } from "storybook/internal/csf";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const PACKAGES = ["core", "cells", "source", "schema", "ai", "mcp"];
@@ -316,6 +317,7 @@ function parseHeadings(text) {
 const STORY_HELPERS = new Set(["Frame", "Box", "Wrapper", "Decorator"]);
 
 function parseStoryHeadings(src) {
+    const title = storyTitle(src, "Story");
     const matches = [...src.matchAll(/export const ([A-Z][A-Za-z0-9]*)/gu)];
     const headings = [];
     for (let i = 0; i < matches.length; i++) {
@@ -329,10 +331,15 @@ function parseStoryHeadings(src) {
                 break;
             }
         }
-        headings.push({ heading: name, text: src.slice(start, end), level: 2 });
+        headings.push({
+            heading: name,
+            text: src.slice(start, end),
+            level: 2,
+            storyId: toId(title, storyNameFromExport(name)),
+        });
     }
     if (headings.length === 0) {
-        return [{ heading: storyTitle(src, "Story"), text: src, level: 1 }];
+        return [{ heading: title, text: src, level: 1 }];
     }
     return headings;
 }

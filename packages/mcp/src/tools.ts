@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { findDoc } from "./bundle.js";
 import { checkSetup, CheckSetupInputSchema } from "./check-setup.js";
-import { firstExportedStory, headingWithChildren, storybookSlug } from "./markdown.js";
+import { headingWithChildren } from "./markdown.js";
 import { scaffold, ScaffoldInputSchema } from "./scaffold.js";
 import { searchDocs } from "./search.js";
 import type { DocBundle } from "./types.js";
@@ -92,9 +92,13 @@ export function getExample(bundle: DocBundle, input: z.infer<typeof GetExampleIn
     if (doc === undefined) {
         return fail(`no story matched ${JSON.stringify(input.query)}`);
     }
-    const exportName = firstExportedStory(doc.text) ?? "Story";
-    const slug = storybookSlug(doc.title, exportName);
-    const url = `https://moeghashim.github.io/tengrids/?path=/story/${slug}`;
+    const hitHeading = doc.headings.find(h => h.heading === hits[0].heading);
+    const storyId =
+        hitHeading?.storyId ?? doc.headings.find(h => h.storyId !== undefined && h.storyId.length > 0)?.storyId;
+    if (storyId === undefined) {
+        return fail(`no Storybook id bundled for ${doc.id}`);
+    }
+    const url = `https://moeghashim.github.io/tengrids/?path=/story/${storyId}`;
     return ok(`title: ${doc.title}\nurl: ${url}\nid: ${doc.id}\n\n${doc.text}`);
 }
 

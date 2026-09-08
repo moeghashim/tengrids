@@ -2,6 +2,8 @@ export type DocHeading = {
     heading: string;
     text: string;
     level: number;
+    /** Storybook `toId(title, storyNameFromExport(name))`, set at docs-bundle time. */
+    storyId?: string;
 };
 
 export type DocEntry = {

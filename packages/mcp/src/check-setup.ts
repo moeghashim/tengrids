@@ -1,3 +1,4 @@
+import { intersects, validRange } from "semver";
 import { z } from "zod";
 
 export const CheckSetupInputSchema = z
@@ -18,73 +19,20 @@ type Pkg = {
 /** Core's required peers (llms.txt / packages/core/package.json). */
 export const CORE_PEERS = ["react", "react-dom", "lodash", "marked", "react-responsive-carousel"] as const;
 
-const REACT_WITNESSES = ["16.12.0", "16.14.0", "17.0.0", "17.0.2", "18.0.0", "18.3.1", "19.0.0", "19.2.8"] as const;
+/** tengrids peer: React 16.12 through 19.x. */
+export const SUPPORTED_REACT_RANGE = ">=16.12.0 <20.0.0";
 
 function allDeps(pkg: Pkg): Record<string, string> {
     return { ...pkg.peerDependencies, ...pkg.devDependencies, ...pkg.dependencies };
 }
 
-function parseVersion(value: string): [number, number, number] | undefined {
-    const match = /^(\d+)(?:\.(\d+)(?:\.(\d+))?)?/u.exec(value.trim());
-    if (match === null) return undefined;
-    return [Number(match[1]), Number(match[2]), Number(match[3] ?? 0)];
-}
-
-function cmp(a: [number, number, number], b: [number, number, number]): number {
-    return a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
-}
-
-function satisfiesOne(spec: string, version: string): boolean {
-    const v = parseVersion(version);
-    if (v === undefined) return false;
-    const token = spec.trim();
-    if (token === "*" || token === "x" || token === "X") return true;
-    if (/^\d+\.x$/iu.test(token) || /^\d+$/u.test(token)) {
-        return v[0] === Number(token.split(".")[0]);
-    }
-    if (token.startsWith("^")) {
-        const base = parseVersion(token.slice(1));
-        if (base === undefined) return false;
-        return cmp(v, base) >= 0 && v[0] === base[0];
-    }
-    if (token.startsWith("~")) {
-        const base = parseVersion(token.slice(1));
-        if (base === undefined) return false;
-        return cmp(v, base) >= 0 && v[0] === base[0] && v[1] === base[1];
-    }
-    if (token.startsWith(">=")) {
-        const base = parseVersion(token.slice(2));
-        return base !== undefined && cmp(v, base) >= 0;
-    }
-    if (token.startsWith("<=")) {
-        const base = parseVersion(token.slice(2));
-        return base !== undefined && cmp(v, base) <= 0;
-    }
-    if (token.startsWith(">")) {
-        const base = parseVersion(token.slice(1));
-        return base !== undefined && cmp(v, base) > 0;
-    }
-    if (token.startsWith("<")) {
-        const base = parseVersion(token.slice(1));
-        return base !== undefined && cmp(v, base) < 0;
-    }
-    const exact = parseVersion(token.startsWith("=") ? token.slice(1) : token);
-    return exact !== undefined && cmp(v, exact) === 0;
-}
-
-function rangeIncludes(range: string, version: string): boolean {
-    return range.split("||").some(part => {
-        const tokens = part.trim().split(/\s+/u).filter(Boolean);
-        return tokens.length > 0 && tokens.every(token => satisfiesOne(token, version));
-    });
-}
-
-/** True when the given npm range includes at least one React 16.12–19 release. */
+/** True when `range` is a valid semver range that intersects 16.12–19. */
 export function isSupportedReact(range: string): boolean {
     const cleaned = range.trim();
     if (cleaned.length === 0) return false;
-    if (/latest|workspace:|file:|git\+|https?:/iu.test(cleaned)) return false;
-    return REACT_WITNESSES.some(witness => rangeIncludes(cleaned, witness));
+    const valid = validRange(cleaned);
+    if (valid === null) return false;
+    return intersects(valid, SUPPORTED_REACT_RANGE);
 }
 
 function stripComments(source: string): string {

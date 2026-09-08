@@ -18,9 +18,16 @@ describe("check_setup", () => {
         expect(isSupportedReact("19.2.8")).toBe(true);
         expect(isSupportedReact("^16.12.0 || 17.x || 18.x || 19.x")).toBe(true);
         expect(isSupportedReact(">=18 <20")).toBe(true);
+        expect(isSupportedReact("18.2.0")).toBe(true);
+        expect(isSupportedReact("16.13.1")).toBe(true);
+        expect(isSupportedReact("19.1.0")).toBe(true);
+        expect(isSupportedReact("~18.2.0")).toBe(true);
+        expect(isSupportedReact("18.2.x")).toBe(true);
+        expect(isSupportedReact("16.12.0 - 19.0.0")).toBe(true);
         expect(isSupportedReact("15.0.0")).toBe(false);
         expect(isSupportedReact("16.8.0")).toBe(false);
         expect(isSupportedReact("<16.12.0")).toBe(false);
+        expect(isSupportedReact("17.0.2garbage")).toBe(false);
         expect(isSupportedReact("latest")).toBe(false);
         expect(isSupportedReact("workspace:*")).toBe(false);
     });

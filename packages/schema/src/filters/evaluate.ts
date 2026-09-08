@@ -45,9 +45,12 @@ function isAlwaysValuesKind(kind: FilterField["kind"]): boolean {
     return kind === "enum" || kind === "boolean";
 }
 
-function isAscii(s: string): boolean {
+/** ASCII with no digits and no controls — localeCompare base+numeric equals case-fold. */
+function isPlainAsciiFold(s: string): boolean {
     for (let i = 0; i < s.length; i++) {
-        if (s.charCodeAt(i) > 127) return false;
+        const c = s.charCodeAt(i);
+        if (c < 0x20 || c === 0x7f || c > 127) return false;
+        if (c >= 48 && c <= 57) return false;
     }
     return true;
 }
@@ -57,9 +60,9 @@ interface PreparedClause {
     readonly parsed: number | undefined;
     readonly inParsed: readonly (number | undefined)[] | undefined;
     readonly fold: string;
-    readonly foldAscii: boolean;
+    readonly foldPlain: boolean;
     readonly inFolds: readonly string[] | undefined;
-    readonly inAllAscii: boolean;
+    readonly inAllPlain: boolean;
     readonly inAnyNumeric: boolean;
 }
 
@@ -69,10 +72,10 @@ function prepareClause(clause: FilterClause): PreparedClause {
         const list = Array.isArray(v) ? v : v === undefined ? [] : [v];
         const inParsed = list.map(asNumber);
         const inFolds = list.map(item => String(item).toLowerCase());
-        let inAllAscii = true;
+        let inAllPlain = true;
         let inAnyNumeric = false;
         for (let i = 0; i < list.length; i++) {
-            if (!isAscii(inFolds[i])) inAllAscii = false;
+            if (!isPlainAsciiFold(inFolds[i])) inAllPlain = false;
             if (inParsed[i] !== undefined) inAnyNumeric = true;
         }
         return {
@@ -80,9 +83,9 @@ function prepareClause(clause: FilterClause): PreparedClause {
             parsed: undefined,
             inParsed,
             fold: "",
-            foldAscii: true,
+            foldPlain: true,
             inFolds,
-            inAllAscii,
+            inAllPlain,
             inAnyNumeric,
         };
     }
@@ -92,43 +95,47 @@ function prepareClause(clause: FilterClause): PreparedClause {
         parsed: asNumber(v),
         inParsed: undefined,
         fold,
-        foldAscii: isAscii(fold),
+        foldPlain: isPlainAsciiFold(fold),
         inFolds: undefined,
-        inAllAscii: true,
+        inAllPlain: true,
         inAnyNumeric: false,
     };
 }
 
 function matchTextFast(text: string, op: FilterOp, prep: PreparedClause): boolean | undefined {
     const lower = text.toLowerCase();
-    const ascii = isAscii(lower);
+    let parsedText: number | undefined;
+    let parsedTextReady = false;
+    const textNumber = (): number | undefined => {
+        if (!parsedTextReady) {
+            parsedText = asNumber(text);
+            parsedTextReady = true;
+        }
+        return parsedText;
+    };
     if (op === "in") {
         if (prep.inFolds === undefined) return undefined;
         for (const f of prep.inFolds) {
             if (f === lower) return true;
         }
-        if (ascii && prep.inAllAscii) {
-            if (prep.inAnyNumeric && prep.inParsed !== undefined) {
-                const n = asNumber(text);
-                if (n !== undefined) {
-                    for (const p of prep.inParsed) {
-                        if (p === n) return true;
-                    }
+        if (prep.inAnyNumeric && prep.inParsed !== undefined) {
+            const n = textNumber();
+            if (n !== undefined) {
+                for (const p of prep.inParsed) {
+                    if (p === n) return true;
                 }
             }
-            return false;
         }
+        if (isPlainAsciiFold(lower) && prep.inAllPlain) return false;
         return undefined;
     }
     if (op === "eq" || op === "neq") {
         if (prep.fold === lower) return op === "eq";
-        if (ascii && prep.foldAscii) {
-            if (prep.parsed !== undefined) {
-                const n = asNumber(text);
-                if (n !== undefined) return op === "eq" ? n === prep.parsed : n !== prep.parsed;
-            }
-            return op !== "eq";
+        if (prep.parsed !== undefined) {
+            const n = textNumber();
+            if (n !== undefined) return op === "eq" ? n === prep.parsed : n !== prep.parsed;
         }
+        if (isPlainAsciiFold(lower) && prep.foldPlain) return op !== "eq";
         return undefined;
     }
     return undefined;
@@ -191,8 +198,11 @@ export function matchesEvaluatorClause(
     }
     const ready = prep ?? prepareClause(clause);
     if (cell.kind === GridCellKind.Number && typeof cell.data === "number" && !Number.isNaN(cell.data)) {
-        const fast = matchNumberData(cell.data, clause.op, ready);
-        if (fast !== undefined) return fast;
+        const display = cell.displayData;
+        if (display === undefined || display === String(cell.data)) {
+            const fast = matchNumberData(cell.data, clause.op, ready);
+            if (fast !== undefined) return fast;
+        }
     }
     if (
         cell.kind === GridCellKind.Boolean &&

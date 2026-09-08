@@ -130,6 +130,31 @@ describe("evaluateGridFilters", () => {
             bool(true),
             bool(false),
             text("2023-04-01"),
+            text("a01"),
+            text("a1"),
+            text("a\u0000"),
+            text("a"),
+            {
+                kind: GridCellKind.Number,
+                data: 1.234,
+                displayData: "1.23",
+                allowOverlay: false,
+            },
+            {
+                kind: GridCellKind.Number,
+                data: 0.125,
+                displayData: "12.5%",
+                allowOverlay: false,
+            },
+            { kind: GridCellKind.Number, data: 10, displayData: "", allowOverlay: false },
+            {
+                kind: GridCellKind.Number,
+                data: 1e21,
+                displayData: String(1e21),
+                allowOverlay: false,
+            },
+            { kind: GridCellKind.Number, data: -4, displayData: "-4", allowOverlay: false },
+            { kind: GridCellKind.Number, data: -4, displayData: "(4)", allowOverlay: false },
         ];
         const clauses: FilterClause[] = [
             { column: "x", op: "eq", value: 100 },
@@ -143,6 +168,18 @@ describe("evaluateGridFilters", () => {
             { column: "x", op: "neq", value: false },
             { column: "x", op: "gt", value: "2022-12-31" },
             { column: "x", op: "eq", value: 1 },
+            { column: "x", op: "eq", value: "a1" },
+            { column: "x", op: "neq", value: "a1" },
+            { column: "x", op: "in", value: ["a1"] },
+            { column: "x", op: "eq", value: "a" },
+            { column: "x", op: "neq", value: "a" },
+            { column: "x", op: "in", value: ["a"] },
+            { column: "x", op: "eq", value: 1.23 },
+            { column: "x", op: "in", value: [1.23] },
+            { column: "x", op: "gte", value: 12.5 },
+            { column: "x", op: "eq", value: 10 },
+            { column: "x", op: "eq", value: "1.23" },
+            { column: "x", op: "eq", value: "12.5%" },
         ];
         const numberField: FilterField = { key: "x", title: "X", kind: "number" };
         const textField: FilterField = { key: "x", title: "X", kind: "text" };
@@ -161,6 +198,64 @@ describe("evaluateGridFilters", () => {
                 expect(
                     matchesEvaluatorClause(cell, clause, field),
                     `${cell.kind} ${JSON.stringify(cell)} vs ${clause.op} ${JSON.stringify(clause.value)}`
+                ).toBe(matchesClause(cell, clause));
+            }
+        }
+    });
+
+    it("numeric collation and formatted numbers affect mapping and facets", () => {
+        const names = ["a01", "a1", "b"];
+        const cols: GridColumn[] = [{ id: "name", title: "Name", width: 1 }];
+        const nameField: FilterField = { key: "name", title: "Name", kind: "text" };
+        const getCell = ([, row]: Item): GridCell => {
+            const s = names[row];
+            return { kind: GridCellKind.Text, data: s, displayData: s, allowOverlay: false };
+        };
+        const spec: FilterSpec = { clauses: [{ column: "name", op: "eq", value: "a1" }] };
+        const r = evaluateGridFilters(spec, [nameField], cols, 3, getCell, 3);
+        expect(r.mapping).toEqual([0, 1]);
+        const facet = r.facets.get("name");
+        expect(facet?.kind).toBe("values");
+        if (facet?.kind !== "values") return;
+        const byVal = Object.fromEntries(facet.values.map(v => [v.value, v.count]));
+        expect(byVal.a01).toBe(1);
+        expect(byVal.a1).toBe(1);
+        expect(byVal.b).toBe(1);
+    });
+
+    it("seeded ASCII pairs agree with matchesClause for eq/neq/in", () => {
+        // mulberry32
+        let seed = 0x9e3779b9;
+        const rand = (): number => {
+            seed = (seed + 0x6d2b79f5) | 0;
+            let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+        const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ._-:/+*%#@!?";
+        const make = (): string => {
+            const len = 1 + Math.floor(rand() * 6);
+            let s = "";
+            for (let i = 0; i < len; i++) s += alphabet[Math.floor(rand() * alphabet.length)];
+            if (rand() < 0.15) s = "0" + s;
+            if (rand() < 0.1) s = " " + s;
+            return s;
+        };
+        const textField: FilterField = { key: "x", title: "X", kind: "text" };
+        for (let i = 0; i < 2000; i++) {
+            const a = make();
+            const b = make();
+            const cell: GridCell = { kind: GridCellKind.Text, data: a, displayData: a, allowOverlay: false };
+            const clauses: FilterClause[] = [
+                { column: "x", op: "eq", value: b },
+                { column: "x", op: "neq", value: b },
+                { column: "x", op: "in", value: [b] },
+                { column: "x", op: "in", value: [b, a] },
+            ];
+            for (const clause of clauses) {
+                expect(
+                    matchesEvaluatorClause(cell, clause, textField),
+                    `pair ${i} ${JSON.stringify(a)} vs ${clause.op} ${JSON.stringify(clause.value)}`
                 ).toBe(matchesClause(cell, clause));
             }
         }

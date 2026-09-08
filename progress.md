@@ -174,3 +174,13 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 - Review round 5: deleted matchTextFast; compare() uses a module-level Intl.Collator; Number raw path requires Number.isFinite; Infinity + Thai LC_ALL child-process differential. Isolated B1 ~97 ms.
 - Review round 6: hoist prepareClause into filter-spec (parsed + folds); matchesClause = matchesPreparedClause; cellText/lower once per (row, column); no per-clause asNumber(b). Isolated B1 ~44 ms.
 
+
+### PR3 feat/mcp — IN PROGRESS
+- Starting PR3: tengrids-mcp stdio server, docs-bundle, skill, and agent docs plumbing (§7, X1 for mcp, C1–C6).
+- Interpretation: mcp is ESM-only with a plain tsc emit to dist/ (no linaria/CJS). Runtime deps are @modelcontextprotocol/sdk@1.30.0, zod@3.25.76, and tengrids-schema (for createSchema/print). docs/ is a gitignored build artifact; llms-full.txt is generated inside docs-bundle.
+- Branch: `feat/mcp` · Actor: Grok 4.6 via pi
+
+### PR3 feat/mcp — IN PROGRESS
+- Implemented tengrids-mcp (stdio, BM25 search, scaffold via createSchema/print, check_setup, --refresh allow-list), docs-bundle (103 docs, generates llms-full.txt), skills/tengrids, CI test-mcp + C2.
+- Suites: mcp 69, schema 131, ai 128, cells 64, source 7, core 387. npm run build green. Live --refresh: 102 ok, 1 fallback (mcp README not on main yet). C2 tsc --noEmit ok on ScaffoldGrid.tsx in next-gdg (React 17); Next wrapper omitted from tsc because hoisted @types/react 19 clashes with Next 12 JSX.
+- Branch: `feat/mcp` · Actor: Grok 4.6 via pi

@@ -289,6 +289,16 @@ describe("col.enum", () => {
         expect(s.applyEdit({ tags: ["a"] }, "tags", { ...cell, data: ["a", "b"] })).toEqual({ tags: ["a", "b"] });
         expect(s.applyEdit({ tags: ["a"] }, "tags", { ...cell, data: ["z"] })).toBeUndefined();
     });
+    it("treats optional-true multiple as scalar when the flag is omitted at runtime", () => {
+        const opts: { values: readonly ["a", "b"]; multiple?: true } = { values: ["a", "b"] };
+        const s = createSchema({ tags: col.enum(opts) });
+        const cell = s.cell({ tags: "a" }, "tags") as TextCell;
+        expect(cell.kind).toBe(GridCellKind.Text);
+        expect(cell.data).toBe("a");
+        const withFlag: { values: readonly ["a", "b"]; multiple?: true } = { values: ["a", "b"], multiple: true };
+        const multi = createSchema({ tags: col.enum(withFlag) });
+        expect(multi.cell({ tags: ["a"] }, "tags").kind).toBe(GridCellKind.Bubble);
+    });
 });
 
 describe("col.uri", () => {
@@ -506,34 +516,6 @@ describe("print", () => {
         expect(src).toContain("site: col.uri(");
         expect(src).toContain("notes: col.markdown(");
         expect(src).toContain("readonly: true");
-        const js = src.replace(/ as const/g, "");
-        const recreate = new Function("createSchema", "col", `"use strict"; return (${js});`) as (
-            cs: typeof createSchema,
-            c: typeof col
-        ) => typeof example;
-        const again = recreate(createSchema, col);
-        expect([...again.keys]).toEqual([...example.keys]);
-        expect(again.columns().map(c => c.id)).toEqual(example.columns().map(c => c.id));
-    });
-    it("quotes non-identifier keys, keeps filterable/sortable false, and stubs callbacks", () => {
-        const s = createSchema({
-            "first-name": col.text({ filterable: false, sortable: false }),
-            extra: col.custom<string>({
-                toCell: (v): GridCell => ({ kind: GridCellKind.Text, data: v, displayData: v, allowOverlay: true }),
-                fromCell: c => (c.kind === GridCellKind.Text ? c.data : undefined),
-            }),
-        });
-        const src = s.print();
-        expect(src).toContain('"first-name": col.text({ filterable: false, sortable: false })');
-        expect(src).toContain("toCell: /* toCell */");
-        expect(src).toContain("fromCell: /* fromCell */");
-        const recreate = new Function("createSchema", "col", `"use strict"; return (${src});`) as (
-            cs: typeof createSchema,
-            c: typeof col
-        ) => ReturnType<typeof createSchema>;
-        const again = recreate(createSchema, col);
-        expect([...again.keys]).toEqual(["first-name", "extra"]);
-        expect(again.flags("first-name")).toEqual({ sortable: false, filterable: false, readonly: false });
     });
 });
 

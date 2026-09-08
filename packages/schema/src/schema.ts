@@ -80,21 +80,11 @@ function printOptions(key: string, def: ColumnDef): string {
         if (value === undefined) continue;
         if (optionKey === "title" && value === key) continue;
         if (optionKey === "id" && value === key) continue;
-        if (optionKey === "accessor") {
-            entries.push(`accessor: /* accessor */ (row) => row[${JSON.stringify(key)}]`);
-            continue;
-        }
-        if (optionKey === "toCell") {
-            entries.push(
-                `toCell: /* toCell */ (value, _row) => ({ kind: "custom", data: value, copyData: String(value ?? ""), allowOverlay: true })`
+        if (typeof value === "function") {
+            throw new Error(
+                "schema.print() cannot serialize function options (accessor, toCell, fromCell); the scaffold consumes JSON schemas without callbacks"
             );
-            continue;
         }
-        if (optionKey === "fromCell") {
-            entries.push(`fromCell: /* fromCell */ (cell, _row) => (cell.kind === "custom" ? cell.data : undefined)`);
-            continue;
-        }
-        if (typeof value === "function") continue;
         const printed = printLiteral(value);
         if (printed === undefined) continue;
         entries.push(`${optionKey}: ${printed}`);

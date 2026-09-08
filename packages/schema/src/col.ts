@@ -6,7 +6,6 @@ import type {
     EnumColumnOptions,
     ImageColumnOptions,
     InferBooleanValue,
-    InferEnumValue,
     MarkdownColumnOptions,
     NumberColumnOptions,
     TextColumnOptions,
@@ -31,13 +30,17 @@ function date(options: DateColumnOptions = {}): ColumnDef<Date | undefined> {
     return { ...options, kind: "date" };
 }
 
-function enumCol<T extends string, M extends boolean | undefined = undefined>(
-    options: Omit<EnumColumnOptions<T>, "values" | "multiple"> & {
-        readonly values: readonly T[];
-        readonly multiple?: M;
-    }
-): ColumnDef<InferEnumValue<T, M>> {
-    return { ...options, kind: "enum" } as ColumnDef<InferEnumValue<T, M>>;
+type EnumBase<T extends string> = Omit<EnumColumnOptions<T>, "values" | "multiple"> & {
+    readonly values: readonly T[];
+};
+
+function enumCol<T extends string>(options: EnumBase<T> & { readonly multiple: true }): ColumnDef<readonly T[]>;
+function enumCol<T extends string>(options: EnumBase<T> & { readonly multiple?: false }): ColumnDef<T>;
+function enumCol<T extends string>(options: EnumBase<T> & { readonly multiple?: boolean }): ColumnDef<T | readonly T[]>;
+function enumCol<T extends string>(
+    options: EnumBase<T> & { readonly multiple?: boolean }
+): ColumnDef<T | readonly T[]> {
+    return { ...options, kind: "enum" };
 }
 
 function uri(options: UriColumnOptions = {}): ColumnDef<string> {

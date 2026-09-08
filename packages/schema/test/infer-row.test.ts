@@ -39,6 +39,17 @@ export type _WidenedEnum = Assert<Equal<Widened["tags"], "a" | "b" | readonly ("
 export type _WidenedBool = Assert<Equal<Widened["flag"], boolean | undefined>>;
 export type _OptionalTrueBool = Assert<Equal<Widened["maybe"], boolean | undefined>>;
 
+const requiredMultiple = createSchema({
+    tags: col.enum({ values: ["a", "b"] as const, multiple: true }),
+});
+export type _RequiredMultiple = Assert<Equal<InferRow<typeof requiredMultiple>["tags"], readonly ("a" | "b")[]>>;
+
+const optionalTrueEnumOpts: { values: readonly ["a", "b"]; multiple?: true } = { values: ["a", "b"] };
+const optionalTrueEnum = createSchema({ tags: col.enum(optionalTrueEnumOpts) });
+export type _OptionalTrueEnum = Assert<
+    Equal<InferRow<typeof optionalTrueEnum>["tags"], "a" | "b" | readonly ("a" | "b")[]>
+>;
+
 describe("InferRow type-level contract (A1)", () => {
     it("assigns the documented row shape", () => {
         const row: Row = {

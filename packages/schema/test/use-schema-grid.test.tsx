@@ -2,6 +2,7 @@ import * as React from "react";
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { GridCellKind, type BooleanCell, type NumberCell, type TextCell } from "tengrids";
+import { useColumnSort } from "tengrids-source";
 import { col, createSchema, useSchemaGrid, type InferRow } from "../src/index.js";
 
 const schema = createSchema({
@@ -200,5 +201,61 @@ describe("useSchemaGrid", () => {
         expect(result.current.rows[0].paid).toBe(true);
         expect(result.current.rows[0].name).toBe("Row 0");
         expect(result.current.rows[1].name).toBe("Other");
+    });
+
+    it("changes getCellContent identity and sort order on same-length row replacement", () => {
+        const { result, rerender } = renderHook(
+            ({ rows }: { rows: readonly Row[] }) => {
+                const grid = useSchemaGrid(schema, rows);
+                const sorted = useColumnSort({
+                    columns: grid.columns,
+                    getCellContent: grid.getCellContent,
+                    rows: grid.rows,
+                    sort: { column: grid.columns[0], direction: "asc", mode: "smart" },
+                });
+                return { grid, sorted };
+            },
+            { initialProps: { rows: [makeRow(1), makeRow(0)] } }
+        );
+        const firstGetter = result.current.grid.getCellContent;
+        expect(result.current.sorted.getCellContent([0, 0])).toMatchObject({ data: "Row 0" });
+        rerender({
+            rows: [
+                { ...makeRow(1), name: "ZZZ" },
+                { ...makeRow(0), name: "AAA" },
+            ],
+        });
+        expect(result.current.grid.getCellContent).not.toBe(firstGetter);
+        expect(result.current.grid.getCellContent([0, 0])).toMatchObject({ data: "ZZZ" });
+        expect(result.current.sorted.getCellContent([0, 0])).toMatchObject({ data: "AAA" });
+    });
+
+    it("does not show uncommitted edits when the parent keeps its rows", () => {
+        const initial = [makeRow(0)];
+        const { result } = renderHook(() => useSchemaGrid(schema, initial));
+        const before = result.current.getCellContent([0, 0]);
+        act(() => {
+            result.current.onCellEdited?.([0, 0], {
+                kind: GridCellKind.Text,
+                data: "Nope",
+                displayData: "Nope",
+                allowOverlay: true,
+            } satisfies TextCell);
+        });
+        expect(result.current.getCellContent([0, 0])).toEqual(before);
+        expect(result.current.getCellContent([0, 0])).toMatchObject({ data: "Row 0" });
+
+        const ignored = vi.fn();
+        const { result: controlled } = renderHook(() => useSchemaGrid(schema, initial, { onRowsChange: ignored }));
+        act(() => {
+            controlled.current.onCellEdited?.([0, 0], {
+                kind: GridCellKind.Text,
+                data: "Nope",
+                displayData: "Nope",
+                allowOverlay: true,
+            } satisfies TextCell);
+        });
+        expect(ignored).toHaveBeenCalled();
+        expect(controlled.current.getCellContent([0, 0])).toMatchObject({ data: "Row 0" });
     });
 });

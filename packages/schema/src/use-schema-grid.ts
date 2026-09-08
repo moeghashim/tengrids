@@ -35,30 +35,24 @@ export function useSchemaGrid<S extends { readonly [K in keyof S]: ColumnDef }>(
     const { onRowsChange, onRowChange, readonly } = options;
     const columns = React.useMemo(() => schema.columns(), [schema]);
 
-    const rowsRef = React.useRef(rows);
     const pendingRef = React.useRef<Row[] | undefined>(undefined);
-    if (pendingRef.current !== undefined && rows === pendingRef.current) {
-        rowsRef.current = pendingRef.current;
-    } else {
-        rowsRef.current = rows;
-        pendingRef.current = undefined;
-    }
+    pendingRef.current = undefined;
 
     const getCellContent = React.useCallback(
         ([col, row]: Item): GridCell => {
-            const current = (pendingRef.current ?? rowsRef.current)[row];
+            const current = rows[row];
             if (current === undefined) return LOADING;
             const cell = schema.toCell(current, col);
             return readonly === true ? freezeCell(cell) : cell;
         },
-        [schema, readonly]
+        [schema, rows, readonly]
     );
 
     const onCellEdited = React.useCallback(
         (cell: Item, newVal: EditableGridCell): void => {
             if (readonly === true) return;
             const [, row] = cell;
-            const currentRows = pendingRef.current ?? rowsRef.current;
+            const currentRows = pendingRef.current ?? rows;
             const current = currentRows[row];
             if (current === undefined) return;
             const key = schema.keys[cell[0]];
@@ -69,10 +63,9 @@ export function useSchemaGrid<S extends { readonly [K in keyof S]: ColumnDef }>(
             const copy = currentRows.slice();
             copy[row] = next;
             pendingRef.current = copy;
-            rowsRef.current = copy;
             onRowsChange?.(copy);
         },
-        [schema, readonly, onRowsChange, onRowChange]
+        [schema, rows, readonly, onRowsChange, onRowChange]
     );
 
     const getCellsForSelection = React.useCallback(

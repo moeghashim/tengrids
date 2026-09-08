@@ -1,4 +1,6 @@
 > Part of [tengrids](https://github.com/moeghashim/tengrids), a fork of [Glide Data Grid](https://github.com/glideapps/glide-data-grid) by Glide (MIT). Install with `npm i tengrids-source`; requires `tengrids` at the same version.
+>
+> Public types from `useAsyncDataSource`: `RowCallback`, `RowToCell`, and `RowEditedCallback` (so `tengrids-schema`'s `toCell` / `onEdited` can be checked against the real hook contract).
 
 <h1 align="center">
   <img src="https://raw.githubusercontent.com/glideapps/glide-data-grid/master/icon.png" width="224px"/><br/>

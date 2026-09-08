@@ -40,20 +40,20 @@ function Grid({ rows, setRows }: { rows: readonly Row[]; setRows: (r: readonly R
 
 Every factory returns a `ColumnDef`. Shared options (all optional):
 
-| Option          | Default        | Meaning                                                                                    |
-| --------------- | -------------- | ------------------------------------------------------------------------------------------ |
-| `title`         | the object key | Header text                                                                                |
-| `id`            | the object key | Column id (always set on `schema.columns()`)                                               |
-| `width`         | unset          | When set, the column is a `SizedGridColumn`                                                |
-| `grow`          | unset          | Flex grow                                                                                  |
-| `group`         | unset          | Column group header                                                                        |
-| `icon`          | unset          | Header icon                                                                                |
-| `readonly`      | `false`        | Overlay disabled; `applyEdit` returns `undefined`                                          |
-| `hasMenu`       | unset          | Header menu affordance                                                                     |
-| `themeOverride` | unset          | Per-column theme                                                                           |
-| `sortable`      | `true`         | Exposed on `schema.flags(key).sortable` (filter/sort layer in PR2)                         |
-| `filterable`    | `true`         | When `false`, omitted from `filterFields()`; also on `schema.flags(key)`                   |
-| `accessor`      | unset          | `(row: SourceRow) => value` for nested reads; edits still write `{ ...row, [key]: value }` |
+| Option          | Default        | Meaning                                                                                                                                                                                                             |
+| --------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `title`         | the object key | Header text                                                                                                                                                                                                         |
+| `id`            | the object key | Column id (always set on `schema.columns()`)                                                                                                                                                                        |
+| `width`         | unset          | When set, the column is a `SizedGridColumn`                                                                                                                                                                         |
+| `grow`          | unset          | Flex grow                                                                                                                                                                                                           |
+| `group`         | unset          | Column group header                                                                                                                                                                                                 |
+| `icon`          | unset          | Header icon                                                                                                                                                                                                         |
+| `readonly`      | `false`        | Overlay disabled; `applyEdit` returns `undefined`                                                                                                                                                                   |
+| `hasMenu`       | unset          | Header menu affordance                                                                                                                                                                                              |
+| `themeOverride` | unset          | Per-column theme                                                                                                                                                                                                    |
+| `sortable`      | `true`         | Exposed on `schema.flags(key).sortable` (filter/sort layer in PR2)                                                                                                                                                  |
+| `filterable`    | `true`         | When `false`, omitted from `filterFields()`; also on `schema.flags(key)`                                                                                                                                            |
+| `accessor`      | unset          | `(row) => value` for nested reads; edits still write `{ ...row, [key]: value }`. The row passed to callbacks is untyped — annotate the parameter yourself (`(r: { address: { city: string } }) => r.address.city`). |
 
 ### `col.text`
 
@@ -89,7 +89,7 @@ Grid cell: `Markdown`. Edit coercion: string.
 
 ### `col.custom`
 
-Grid cell: whatever `toCell` returns (any `GridCell`, so a custom column can reuse a built-in kind; §5.2 says Custom). Shared `readonly` is applied to the generated cell. Options: `toCell(rowValue, row)`, `fromCell(cell, row)` (return `undefined` to reject), `filter?: FilterKind` for `filterFields()`.
+Grid cell: whatever `toCell` returns (any `GridCell`, so a custom column can reuse a built-in kind; §5.2 says Custom). Shared `readonly` is applied to the generated cell. Options: `toCell(rowValue, row)`, `fromCell(cell, row)` (return `undefined` to reject), `filter?: FilterKind` for `filterFields()`. Like `accessor`, the `row` argument is untyped; annotate it at the call site.
 
 ## Generators
 
@@ -103,7 +103,7 @@ All pure and memoized once per schema:
 - `schema.onEdited` — `RowEditedCallback` shape
 - `schema.filterFields()` — readonly `FilterField[]` derived from kind / `values` (image columns and `filterable: false` are omitted)
 - `schema.flags(key)` — `{ sortable, filterable, readonly }` with defaults `true` / `true` / `false`
-- `schema.print()` — TypeScript source of this schema (used by the scaffold tool). Functions (`accessor`, `toCell`, `fromCell`) become commented stubs so the output still parses; non-identifier keys are quoted.
+- `schema.print()` — TypeScript source of this schema (used by the scaffold tool). Non-identifier keys are quoted. Throws if any column has a function option (`accessor`, `toCell`, `fromCell`); the scaffold consumes JSON schemas without callbacks.
 
 `useSchemaGrid(schema, rows, { onRowsChange, onRowChange, readonly })` composes the above for in-memory arrays.
 

@@ -179,9 +179,11 @@ function version(args) {
         const p = join(REPO_ROOT, "packages", name, "package.json");
         const pkg = readJson(p);
         pkg.version = next;
-        if (pkg.dependencies !== undefined) {
-            for (const dep of Object.keys(pkg.dependencies)) {
-                if (workspaceNames.has(dep)) pkg.dependencies[dep] = next;
+        for (const field of ["dependencies", "devDependencies", "peerDependencies"]) {
+            const bag = pkg[field];
+            if (bag === undefined) continue;
+            for (const dep of Object.keys(bag)) {
+                if (workspaceNames.has(dep)) bag[dep] = next;
             }
         }
         writeJson(p, pkg);

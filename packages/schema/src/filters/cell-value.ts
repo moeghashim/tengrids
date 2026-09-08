@@ -44,18 +44,38 @@ export function numericValue(cell: GridCell): number | undefined {
     return Number.isNaN(t) ? undefined : t;
 }
 
-/** Distinct values counted toward a values-facet (bubble items counted separately). */
-export function facetStrings(cell: GridCell, field: FilterField): readonly string[] {
+/** Visit each facet value without allocating for Text/Number/Uri/Boolean cells. */
+export function forEachFacetString(cell: GridCell, field: FilterField, visit: (value: string) => void): void {
     if (cell.kind === GridCellKind.Boolean) {
-        if (cell.data === true) return ["true"];
-        if (cell.data === false) return ["false"];
-        return [""];
+        visit(cell.data === true ? "true" : cell.data === false ? "false" : "");
+        return;
     }
     if (cell.kind === GridCellKind.Bubble) {
-        return cell.data.length === 0 ? [""] : cell.data;
+        if (cell.data.length === 0) visit("");
+        else for (const item of cell.data) visit(item);
+        return;
     }
     if (field.kind === "enum" && field.multiple === true && cell.kind === GridCellKind.Text) {
-        return cell.data === "" ? [""] : cell.data.split(",").map(s => s.trim());
+        if (cell.data === "") visit("");
+        else for (const part of cell.data.split(",")) visit(part.trim());
+        return;
     }
-    return [cellText(cell)];
+    if (cell.kind === GridCellKind.Number) {
+        visit(cell.displayData ?? (cell.data === undefined ? "" : String(cell.data)));
+        return;
+    }
+    if (cell.kind === GridCellKind.Text || cell.kind === GridCellKind.Uri) {
+        visit(cell.displayData ?? (cell.data === undefined ? "" : String(cell.data)));
+        return;
+    }
+    visit(cellText(cell));
+}
+
+/** Distinct values counted toward a values-facet (bubble items counted separately). */
+export function facetStrings(cell: GridCell, field: FilterField): readonly string[] {
+    const out: string[] = [];
+    forEachFacetString(cell, field, v => {
+        out.push(v);
+    });
+    return out;
 }

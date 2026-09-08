@@ -169,4 +169,5 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 - PR: https://github.com/moeghashim/tengrids/pull/12 · last sha `9f679b0` (Linux rail baselines).
 - Review round 1 (Astra 14 + Fable 10): setSpec(undefined), store.get() mutations, lazy popstate, pinned inline urlStore, readable toQueryString, enum membership, range-under-OR, sibling clear + focus restore, truncated always when capped, stories tsc, AI integration test. B6 no longer crashes.
 - Review round 2 (Astra 5/11/15, Fable 1–3): NODE_ENV try/catch around literal process.env.NODE_ENV; lossless toSearchParams.append(encodeClause); subscribe then store.get() on mount.
+- Review round 3: B1 warmup + best-of-3 (threshold 250 ms); evaluator Number/Text fast path (pre-parsed clause values, ASCII in/eq, no per-row parseNumber); esbuild transform of real rejectOp without process. Isolated B1 ~33 ms.
 

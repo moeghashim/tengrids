@@ -1,7 +1,14 @@
 import { GridCellKind, type DataEditorProps, type GridCell, type GridColumn } from "tengrids";
-import { findColumnIndex, matchesClause, type FilterClause, type FilterSpec } from "../filter-spec.js";
+import {
+    asNumber,
+    findColumnIndex,
+    matchesClause,
+    type FilterClause,
+    type FilterOp,
+    type FilterSpec,
+} from "../filter-spec.js";
 import type { FilterField } from "../types.js";
-import { facetStrings, numericValue } from "./cell-value.js";
+import { forEachFacetString, numericValue } from "./cell-value.js";
 
 export type ValueFacet = {
     readonly kind: "values";
@@ -38,19 +45,142 @@ function isAlwaysValuesKind(kind: FilterField["kind"]): boolean {
     return kind === "enum" || kind === "boolean";
 }
 
-/** `in` against each displayed enum/bubble item, not the joined cell text. */
-function matchesEnumIn(cell: GridCell, clause: FilterClause, field: FilterField): boolean {
-    const items = facetStrings(cell, field);
-    const list = Array.isArray(clause.value) ? clause.value : clause.value === undefined ? [] : [clause.value];
-    const sub: FilterClause = { column: clause.column, op: "in", value: list };
-    for (const item of items) {
-        const fake: GridCell = { kind: GridCellKind.Text, data: item, displayData: item, allowOverlay: false };
-        if (matchesClause(fake, sub)) return true;
+function isAscii(s: string): boolean {
+    for (let i = 0; i < s.length; i++) {
+        if (s.charCodeAt(i) > 127) return false;
     }
-    return false;
+    return true;
 }
 
-function matchesEvaluatorClause(cell: GridCell, clause: FilterClause, field: FilterField | undefined): boolean {
+interface PreparedClause {
+    readonly clause: FilterClause;
+    readonly parsed: number | undefined;
+    readonly inParsed: readonly (number | undefined)[] | undefined;
+    readonly fold: string;
+    readonly foldAscii: boolean;
+    readonly inFolds: readonly string[] | undefined;
+    readonly inAllAscii: boolean;
+    readonly inAnyNumeric: boolean;
+}
+
+function prepareClause(clause: FilterClause): PreparedClause {
+    const v = clause.value;
+    if (clause.op === "in") {
+        const list = Array.isArray(v) ? v : v === undefined ? [] : [v];
+        const inParsed = list.map(asNumber);
+        const inFolds = list.map(item => String(item).toLowerCase());
+        let inAllAscii = true;
+        let inAnyNumeric = false;
+        for (let i = 0; i < list.length; i++) {
+            if (!isAscii(inFolds[i])) inAllAscii = false;
+            if (inParsed[i] !== undefined) inAnyNumeric = true;
+        }
+        return {
+            clause,
+            parsed: undefined,
+            inParsed,
+            fold: "",
+            foldAscii: true,
+            inFolds,
+            inAllAscii,
+            inAnyNumeric,
+        };
+    }
+    const fold = v === undefined ? "" : String(v).toLowerCase();
+    return {
+        clause,
+        parsed: asNumber(v),
+        inParsed: undefined,
+        fold,
+        foldAscii: isAscii(fold),
+        inFolds: undefined,
+        inAllAscii: true,
+        inAnyNumeric: false,
+    };
+}
+
+function matchTextFast(text: string, op: FilterOp, prep: PreparedClause): boolean | undefined {
+    const lower = text.toLowerCase();
+    const ascii = isAscii(lower);
+    if (op === "in") {
+        if (prep.inFolds === undefined) return undefined;
+        for (const f of prep.inFolds) {
+            if (f === lower) return true;
+        }
+        if (ascii && prep.inAllAscii) {
+            if (prep.inAnyNumeric && prep.inParsed !== undefined) {
+                const n = asNumber(text);
+                if (n !== undefined) {
+                    for (const p of prep.inParsed) {
+                        if (p === n) return true;
+                    }
+                }
+            }
+            return false;
+        }
+        return undefined;
+    }
+    if (op === "eq" || op === "neq") {
+        if (prep.fold === lower) return op === "eq";
+        if (ascii && prep.foldAscii) {
+            if (prep.parsed !== undefined) {
+                const n = asNumber(text);
+                if (n !== undefined) return op === "eq" ? n === prep.parsed : n !== prep.parsed;
+            }
+            return op !== "eq";
+        }
+        return undefined;
+    }
+    return undefined;
+}
+
+function matchNumberData(n: number, op: FilterOp, prep: PreparedClause): boolean | undefined {
+    switch (op) {
+        case "eq":
+            return prep.parsed === undefined ? undefined : n === prep.parsed;
+        case "neq":
+            return prep.parsed === undefined ? undefined : n !== prep.parsed;
+        case "gt":
+            return prep.parsed === undefined ? undefined : n > prep.parsed;
+        case "gte":
+            return prep.parsed === undefined ? undefined : n >= prep.parsed;
+        case "lt":
+            return prep.parsed === undefined ? undefined : n < prep.parsed;
+        case "lte":
+            return prep.parsed === undefined ? undefined : n <= prep.parsed;
+        case "in": {
+            if (prep.inParsed === undefined) return undefined;
+            let allNumeric = true;
+            for (const p of prep.inParsed) {
+                if (p === undefined) allNumeric = false;
+                else if (p === n) return true;
+            }
+            return allNumeric ? false : undefined;
+        }
+        default:
+            return undefined;
+    }
+}
+
+/** `in` against each displayed enum/bubble item, not the joined cell text. */
+function matchesEnumIn(cell: GridCell, clause: FilterClause, field: FilterField): boolean {
+    const list = Array.isArray(clause.value) ? clause.value : clause.value === undefined ? [] : [clause.value];
+    const sub: FilterClause = { column: clause.column, op: "in", value: list };
+    let hit = false;
+    forEachFacetString(cell, field, item => {
+        if (hit) return;
+        const fake: GridCell = { kind: GridCellKind.Text, data: item, displayData: item, allowOverlay: false };
+        if (matchesClause(fake, sub)) hit = true;
+    });
+    return hit;
+}
+
+export function matchesEvaluatorClause(
+    cell: GridCell,
+    clause: FilterClause,
+    field: FilterField | undefined,
+    prep?: PreparedClause
+): boolean {
     if (
         field !== undefined &&
         field.kind === "enum" &&
@@ -58,6 +188,24 @@ function matchesEvaluatorClause(cell: GridCell, clause: FilterClause, field: Fil
         (field.multiple === true || cell.kind === GridCellKind.Bubble)
     ) {
         return matchesEnumIn(cell, clause, field);
+    }
+    const ready = prep ?? prepareClause(clause);
+    if (cell.kind === GridCellKind.Number && typeof cell.data === "number" && !Number.isNaN(cell.data)) {
+        const fast = matchNumberData(cell.data, clause.op, ready);
+        if (fast !== undefined) return fast;
+    }
+    if (
+        cell.kind === GridCellKind.Boolean &&
+        (clause.op === "eq" || clause.op === "neq") &&
+        typeof clause.value === "boolean"
+    ) {
+        const eq = cell.data === clause.value;
+        return clause.op === "eq" ? eq : !eq;
+    }
+    if (cell.kind === GridCellKind.Text || cell.kind === GridCellKind.Uri) {
+        const text = cell.displayData ?? (cell.data === undefined ? "" : String(cell.data));
+        const fast = matchTextFast(text, clause.op, ready);
+        if (fast !== undefined) return fast;
     }
     return matchesClause(cell, clause);
 }
@@ -81,6 +229,7 @@ export function evaluateGridFilters(
 
     const clauseCols = spec.clauses.map(c => findColumnIndex(columns, c.column));
     const clauseFields = spec.clauses.map(c => fields.find(f => clauseMatchesField(c, f)));
+    const prepared = spec.clauses.map(prepareClause);
     const fieldCols = fields.map(f => {
         const byKey = findColumnIndex(columns, f.key);
         return byKey === -1 ? findColumnIndex(columns, f.title) : byKey;
@@ -120,7 +269,8 @@ export function evaluateGridFilters(
         for (let i = 0; i < spec.clauses.length; i++) {
             const idx = clauseCols[i];
             const cell = idx === -1 ? undefined : scratch[idx];
-            const hit = cell !== undefined && matchesEvaluatorClause(cell, spec.clauses[i], clauseFields[i]);
+            const hit =
+                cell !== undefined && matchesEvaluatorClause(cell, spec.clauses[i], clauseFields[i], prepared[i]);
             hits[i] = hit;
             if (hit) fullOr = true;
             else fullAnd = false;
@@ -158,9 +308,9 @@ export function evaluateGridFilters(
             } else {
                 const acc = valueAcc[f];
                 if (acc === undefined || overflow[f]) continue;
-                for (const v of facetStrings(cell, field)) {
+                forEachFacetString(cell, field, v => {
                     acc.set(v, (acc.get(v) ?? 0) + 1);
-                }
+                });
                 if (!isAlwaysValuesKind(field.kind) && acc.size > TEXT_FEW_VALUES) overflow[f] = true;
             }
         }

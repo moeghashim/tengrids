@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { GridCellKind, type GridCell, type GridColumn, type Item } from "tengrids";
 import type { FilterField, FilterSpec } from "../src/index.js";
-import { clauseMatchesField, columnsFromFields, evaluateGridFilters } from "../src/index.js";
+import { clauseMatchesField, columnsFromFields, evaluateGridFilters, matchesClause } from "../src/index.js";
+import { matchesEvaluatorClause } from "../src/filters/evaluate.js";
+import type { FilterClause } from "../src/index.js";
 
 const fields: FilterField[] = [
     { key: "name", title: "Name", kind: "text" },
@@ -103,5 +105,64 @@ describe("evaluateGridFilters", () => {
         const byVal = Object.fromEntries(facet.values.map(v => [v.value, v.count]));
         expect(byVal.active).toBe(2);
         expect(byVal.draft).toBe(2);
+    });
+
+    it("numeric fast path agrees with matchesClause on mixed cells", () => {
+        const num = (n: number): GridCell => ({
+            kind: GridCellKind.Number,
+            data: n,
+            displayData: String(n),
+            allowOverlay: false,
+        });
+        const text = (s: string): GridCell => ({
+            kind: GridCellKind.Text,
+            data: s,
+            displayData: s,
+            allowOverlay: false,
+        });
+        const bool = (v: boolean): GridCell => ({ kind: GridCellKind.Boolean, data: v, allowOverlay: false });
+        const cells: GridCell[] = [
+            num(100),
+            num(1),
+            text("100"),
+            text("1e2"),
+            text("café"),
+            bool(true),
+            bool(false),
+            text("2023-04-01"),
+        ];
+        const clauses: FilterClause[] = [
+            { column: "x", op: "eq", value: 100 },
+            { column: "x", op: "eq", value: "1e2" },
+            { column: "x", op: "neq", value: 100 },
+            { column: "x", op: "gte", value: 50 },
+            { column: "x", op: "lt", value: 10 },
+            { column: "x", op: "in", value: ["1e2", 100] },
+            { column: "x", op: "in", value: ["cafe"] },
+            { column: "x", op: "eq", value: true },
+            { column: "x", op: "neq", value: false },
+            { column: "x", op: "gt", value: "2022-12-31" },
+            { column: "x", op: "eq", value: 1 },
+        ];
+        const numberField: FilterField = { key: "x", title: "X", kind: "number" };
+        const textField: FilterField = { key: "x", title: "X", kind: "text" };
+        const boolField: FilterField = { key: "x", title: "X", kind: "boolean" };
+        const dateField: FilterField = { key: "x", title: "X", kind: "date" };
+        for (const cell of cells) {
+            const field =
+                cell.kind === GridCellKind.Number
+                    ? numberField
+                    : cell.kind === GridCellKind.Boolean
+                      ? boolField
+                      : cell.kind === GridCellKind.Text && cell.data.includes("-")
+                        ? dateField
+                        : textField;
+            for (const clause of clauses) {
+                expect(
+                    matchesEvaluatorClause(cell, clause, field),
+                    `${cell.kind} ${JSON.stringify(cell)} vs ${clause.op} ${JSON.stringify(clause.value)}`
+                ).toBe(matchesClause(cell, clause));
+            }
+        }
     });
 });

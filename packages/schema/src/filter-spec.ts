@@ -139,7 +139,7 @@ function cellText(cell: GridCell): string {
     }
 }
 
-function asNumber(v: unknown): number | undefined {
+export function asNumber(v: unknown): number | undefined {
     if (typeof v === "number") return Number.isNaN(v) ? undefined : v;
     if (typeof v === "boolean") return v ? 1 : 0;
     if (typeof v === "string") {

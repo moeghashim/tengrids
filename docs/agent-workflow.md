@@ -29,7 +29,7 @@ Prompt files that drive each step live in `agent/prompts/`:
         --line "createSchema + col.* factories with InferRow" --line "..." --actor "Grok 4.6 via pi"
     ```
     Today's section may be edited (tick checklists, add results). Earlier days are frozen; `npm run progress:check` enforces it and CI runs it against `origin/main`.
-4. Commit as `Moe Ghashim <mohanadgh@gmail.com>` with a `Co-Authored-By:` trailer naming the agent (e.g. `Co-Authored-By: Grok 4.6 <grok@x.ai>`).
+4. Commit with `git commit -s` as `Moe Ghashim <mohanadgh@gmail.com>` so each commit carries `Signed-off-by: Moe Ghashim <mohanadgh@gmail.com>` (required by the DCO check on pull requests), plus a `Co-Authored-By:` trailer naming the agent (e.g. `Co-Authored-By: Grok 4.6 <grok@x.ai>`).
 
 ## Validate
 

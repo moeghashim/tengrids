@@ -87,7 +87,7 @@ Cell system: cells are data objects (`GridCellKind.*` in `internal/data-grid/dat
 
 - `progress.md` at the repo root is the running log: every piece of work is appended under the current date as it happens (`npm run progress:append -- --title "…" --status "IN PROGRESS" --line "…"`). Today's section may be edited; earlier dated sections are frozen and `npm run progress:check` (pre-commit or `--base origin/main` in CI) rejects rewrites. Read the last two dated sections before starting a task.
 - Roles, prompts, and the review gate are in `docs/agent-workflow.md` and `agent/prompts/` (`pickup`, `execute-pr`, `review-pr`, `signoff-pr`, `handoff`). Feature work is specified in `docs/prd/*.md` first; a PR that implements something not in its PRD gets `request changes`.
-- Commits are authored as Moe Ghashim `<mohanadgh@gmail.com>` with a `Co-Authored-By:` trailer naming the agent that produced them.
+- Commits are authored as Moe Ghashim `<mohanadgh@gmail.com>`, made with `git commit -s` so they carry `Signed-off-by: Moe Ghashim <mohanadgh@gmail.com>` (the DCO check on pull requests fails without it), plus a `Co-Authored-By:` trailer naming the agent that produced them.
 
 ## Fork notes
 

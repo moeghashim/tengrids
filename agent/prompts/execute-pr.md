@@ -7,7 +7,7 @@ Purpose: implement one PRD milestone on its own branch so that two reviewers can
 3. Implement to the acceptance criteria. Every criterion gets a test or a documented manual check. Follow `AGENTS.md`: no core changes without justification, React 16–19 rule (no `useId`, `useSyncExternalStore`, `createRoot`), Prettier 4 spaces / 120 columns / double quotes, strict TypeScript, no `any` in public types, no import cycles.
 4. Run and keep the real output of: `npm run build`, `npm test`, `npm run test-cells`, `npm run test-source`, `npm run test-ai`, and the new package's suite.
 5. Append to `progress.md` with `node scripts/progress-log.mjs append ...` as you go; do not edit earlier dated sections.
-6. Commit in logical units as `Moe Ghashim <mohanadgh@gmail.com>` with `Co-Authored-By: <your model name> <email>`.
+6. Commit in logical units with `git commit -s` so every commit carries `Signed-off-by: Moe Ghashim <mohanadgh@gmail.com>` (the DCO check on pull requests requires it), plus a `Co-Authored-By: <your model name> <email>` trailer.
 7. Write the PR description with this template, then stop and report:
 
 ```

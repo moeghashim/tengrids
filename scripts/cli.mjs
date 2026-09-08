@@ -16,9 +16,9 @@ import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const PACKAGES = ["core", "cells", "source", "ai"];
+const PACKAGES = ["core", "cells", "source", "schema", "ai"];
 const CORE_PKG = "tengrids";
-const BANNER = { core: "Glide Data Grid", cells: "Glide Data Grid Cells", source: "Glide Data Grid Source", ai: "tengrids AI" };
+const BANNER = { core: "Glide Data Grid", cells: "Glide Data Grid Cells", source: "Glide Data Grid Source", schema: "tengrids Schema", ai: "tengrids AI" };
 const cyan = s => `[0;36m${s}[0m`;
 
 // ---------------------------------------------------------------- helpers
@@ -117,10 +117,13 @@ async function buildPackage(name) {
 async function build(args) {
     const all = args.includes("--all");
     const names = all ? PACKAGES : args.filter(a => !a.startsWith("-"));
-    if (names.length === 0) throw new Error("build: specify packages (core, cells, source) or --all");
-    // cells, source, and ai compile against core's dist, so core goes first.
+    if (names.length === 0) throw new Error("build: specify packages (core, cells, source, schema, ai) or --all");
+    // cells, source, schema, and ai compile against core's dist, so core goes first.
+    // ai depends on schema's dist, so schema goes before the remaining packages.
     if (names.includes("core")) await buildPackage("core");
-    await Promise.all(names.filter(n => n !== "core").map(buildPackage));
+    const rest = names.filter(n => n !== "core");
+    if (rest.includes("schema")) await buildPackage("schema");
+    await Promise.all(rest.filter(n => n !== "schema").map(buildPackage));
 }
 
 // ---------------------------------------------------------------- version
@@ -199,7 +202,7 @@ async function bootstrap() {
 
 const HELP = `tengrids developer CLI
 
-  build <core|cells|source>... | --all   compile ESM + CJS, extract linaria CSS, emit dist/
+  build <core|cells|source|schema|ai>... | --all   compile ESM + CJS, extract linaria CSS, emit dist/
   version [newVersion]                    set the version across all workspace packages
   test [--react 18|19|latest] [--no-restore] [vitest args]
                                           run the core suite, optionally against another React

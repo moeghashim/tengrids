@@ -22,6 +22,7 @@ jobs:
             - run: npm run test-source
             - run: npm run test-cells
             - run: npm run test-ai
+            - run: npm run test-schema
             - run: npm run test-projects
             - name: progress.md is append-only for past days
               if: github.event_name == 'pull_request'

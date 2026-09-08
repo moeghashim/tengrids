@@ -1,0 +1,57 @@
+{
+    "name": "tengrids-schema",
+    "version": "6.0.4-alpha26",
+    "description": "Declarative schema, cell generators, and FilterSpec for tengrids",
+    "sideEffects": false,
+    "type": "module",
+    "browser": "dist/esm/index.js",
+    "main": "dist/cjs/index.js",
+    "module": "dist/esm/index.js",
+    "types": "dist/dts/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/dts/index.d.ts",
+            "import": "./dist/esm/index.js",
+            "require": "./dist/cjs/index.js"
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "node ../../scripts/cli.mjs build schema",
+        "lint": "eslint src --ext .ts,.tsx && ts-helper -p ./tsconfig.json -r ./src/index.ts -c --package-regex packages/core",
+        "test": "vitest"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/moeghashim/tengrids.git",
+        "directory": "packages/schema"
+    },
+    "homepage": "https://github.com/moeghashim/tengrids/tree/main/packages/schema",
+    "author": "Moe Ghashim",
+    "license": "MIT",
+    "keywords": [
+        "react",
+        "datagrid",
+        "data-grid",
+        "schema",
+        "filter",
+        "canvas"
+    ],
+    "dependencies": {
+        "tengrids": "6.0.4-alpha26"
+    },
+    "peerDependencies": {
+        "react": "^16.12.0 || 17.x || 18.x || 19.x",
+        "react-dom": "^16.12.0 || 17.x || 18.x || 19.x"
+    },
+    "devDependencies": {
+        "@glideapps/ts-helper": "6.0.1",
+        "eslint": "^8.57.1",
+        "eslint-plugin-import": "^2.31.0",
+        "eslint-plugin-react": "^7.37.5",
+        "eslint-plugin-react-hooks": "^5.2.0",
+        "typescript": "^5.8.3"
+    }
+}

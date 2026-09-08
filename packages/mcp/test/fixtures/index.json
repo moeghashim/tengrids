@@ -1,0 +1,49 @@
+{
+    "version": "6.0.4-alpha26",
+    "docs": [
+        {
+            "id": "api",
+            "title": "API reference",
+            "path": "packages/core/API.md",
+            "headings": [
+                {
+                    "heading": "HTML/CSS Prerequisites",
+                    "text": "The Grid depends on there being a root level portal div. Give the parent a real width and height. Import tengrids/dist/index.css. Overlay editors mount into #portal."
+                },
+                {
+                    "heading": "Theme",
+                    "text": "The theme prop styles the grid. textDark, bgCell, accentColor. Dark mode is a dark theme object, not a CSS class."
+                },
+                {
+                    "heading": "freezeColumns",
+                    "text": "Frozen columns stay in place while the rest of the grid scrolls. Set freezeColumns to a number greater than 0."
+                }
+            ],
+            "text": "# API reference\n\n## HTML/CSS Prerequisites\n\nThe Grid depends on there being a root level portal div. Give the parent a real width and height. Import tengrids/dist/index.css. Overlay editors mount into #portal.\n\n## Theme\n\nThe theme prop styles the grid. textDark, bgCell, accentColor. Dark mode is a dark theme object, not a CSS class.\n\n## freezeColumns\n\nFrozen columns stay in place while the rest of the grid scrolls. Set freezeColumns to a number greater than 0.\n"
+        },
+        {
+            "id": "readme-core",
+            "title": "tengrids",
+            "path": "packages/core/README.md",
+            "headings": [
+                {
+                    "heading": "FAQ",
+                    "text": "Nothing shows up? Read the Prerequisites section."
+                }
+            ],
+            "text": "# tengrids\n\n## FAQ\n\nNothing shows up? Read the Prerequisites section.\n"
+        },
+        {
+            "id": "story-core-docs-examples-freeze-columns",
+            "title": "Glide-Data-Grid/DataEditor Demos",
+            "path": "packages/core/src/docs/examples/freeze-columns.stories.tsx",
+            "headings": [
+                {
+                    "heading": "Glide-Data-Grid/DataEditor Demos",
+                    "text": "export default { title: \"Glide-Data-Grid/DataEditor Demos\" };\nexport const FreezeColumns = () => null;\n// freezeColumns example\n"
+                }
+            ],
+            "text": "export default { title: \"Glide-Data-Grid/DataEditor Demos\" };\nexport const FreezeColumns = () => null;\n// freezeColumns example\n"
+        }
+    ]
+}

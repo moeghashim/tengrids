@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "tengrids": "file:../../packages/core",
+    "tengrids-schema": "file:../../packages/schema",
     "canvas-hypertxt": "^1.0.3",
     "lodash": "^4.17.21",
     "marked": "^16.1.2",

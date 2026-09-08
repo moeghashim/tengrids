@@ -1,0 +1,49 @@
+{
+    "name": "tengrids-mcp",
+    "version": "6.0.4-alpha26",
+    "description": "stdio MCP server for tengrids docs, examples, and schema scaffolding",
+    "sideEffects": false,
+    "type": "module",
+    "main": "dist/cli.js",
+    "types": "dist/cli.d.ts",
+    "bin": {
+        "tengrids-mcp": "dist/cli.js"
+    },
+    "engines": {
+        "node": ">=20.10"
+    },
+    "files": [
+        "dist",
+        "docs"
+    ],
+    "scripts": {
+        "build": "node ../../scripts/cli.mjs build mcp",
+        "lint": "eslint src --ext .ts && tsc --noEmit -p tsconfig.json",
+        "test": "vitest"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/moeghashim/tengrids.git",
+        "directory": "packages/mcp"
+    },
+    "homepage": "https://github.com/moeghashim/tengrids/tree/main/packages/mcp",
+    "author": "Moe Ghashim",
+    "license": "MIT",
+    "keywords": [
+        "mcp",
+        "modelcontextprotocol",
+        "tengrids",
+        "datagrid",
+        "agent"
+    ],
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "1.30.0",
+        "tengrids-schema": "6.0.4-alpha26",
+        "zod": "3.25.76"
+    },
+    "devDependencies": {
+        "eslint": "^8.57.1",
+        "eslint-plugin-import": "^2.31.0",
+        "typescript": "^5.8.3"
+    }
+}

@@ -180,11 +180,13 @@ export function matchesClause(cell: GridCell, clause: FilterClause): boolean {
             return text.trim() !== "";
         case "in": {
             const list = Array.isArray(v) ? v : v === undefined ? [] : [v];
-            return list.some(x => compare(text, x) === 0);
+            return list.some(x => (typeof x === "string" ? lower === x.toLowerCase() : compare(text, x) === 0));
         }
         case "eq":
+            if (typeof v === "string" && lower === vs) return true;
             return compare(text, v) === 0;
         case "neq":
+            if (typeof v === "string" && lower === vs) return false;
             return compare(text, v) !== 0;
         case "gt":
         case "gte":

@@ -143,3 +143,11 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 - `scripts/progress-log.mjs` appends under today's date (`npm run progress:append -- --title … --line …`); `scripts/progress-append-only-check.mjs` freezes every dated section except the latest one so checklists can still be ticked (`npm run progress:check`, and a CI step on pull requests against the base branch).
 - `docs/agent-workflow.md` + `agent/prompts/{pickup,execute-pr,review-pr,signoff-pr,handoff}.md` encode the PRD §9 protocol (Grok 4.6 via `pi` executes, GPT Astra via `codex review` reviews, Claude Fable 5.1 reviews and signs off, Moe merges). AGENTS.md gained an "Agent workflow" section and a commands-table row.
 - Branch: `main` · Actor: Claude Fable 5.1
+
+### PR1 feat/schema — IN PROGRESS
+- Starting PR1: tengrids-schema package skeleton, factories/generators/useSchemaGrid, FilterSpec move, stories/docs.
+- Branch: `feat/schema` · Actor: Grok 4.6 via pi
+
+### PR1 feat/schema — IN PROGRESS
+- Package builds and lints; 42 schema tests, 126 ai tests, 387 core, 64 cells, 7 source all green. FilterSpec moved with re-exports.
+- Branch: `feat/schema` · Actor: Grok 4.6 via pi

@@ -28,13 +28,14 @@ This fork tracks upstream v6.0.4-alpha25.
 
 # 📦 Packages
 
-This is an npm-workspaces monorepo publishing four packages to npm:
+This is an npm-workspaces monorepo publishing five packages to npm:
 
 | Package | Directory | What it is |
 | --- | --- | --- |
 | `tengrids` | [`packages/core`](packages/core) | The grid itself |
 | `tengrids-cells` | [`packages/cells`](packages/cells) | Extra cell renderers (dropdown, sparkline, tags, date picker, …) |
 | `tengrids-source` | [`packages/source`](packages/source) | Data-source hooks (async loading, sorting, undo/redo, …) |
+| `tengrids-schema` | [`packages/schema`](packages/schema) | Declarative schema (`createSchema`, `col.*`, `useSchemaGrid`) and `FilterSpec` |
 | `tengrids-ai` | [`packages/ai`](packages/ai) | AI features, bring your own model: AI formula cells, natural-language search/filter, agent-fed data source, smart paste, bulk edit |
 
 # ⚡ Quick Start

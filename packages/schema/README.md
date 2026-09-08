@@ -111,4 +111,96 @@ All pure and memoized once per schema:
 
 `FilterOp`, `FilterClause`, `FilterSpec`, `evaluateFilter`, `matchesClause`, `findColumnIndex`, and `specColumns` live here. `tengrids-ai` re-exports every name, so existing imports keep working.
 
+## Faceted filters
+
+```tsx
+import { useGridFilters, memoryStore, urlStore, FilterRail } from "tengrids-schema";
+import "tengrids-schema/dist/index.css";
+
+const filters = useGridFilters({
+    fields: schema.filterFields(),
+    columns: grid.columns,          // maps field keys onto getCellContent indices
+    rows: grid.rows,
+    getCellContent: grid.getCellContent,
+    store: urlStore({ param: "f" }), // default: memoryStore()
+    maxRows: 50_000,
+});
+
+<FilterRail filters={filters} />
+<DataEditor {...grid} rows={filters.rows} getCellContent={filters.getCellContent} />
+```
+
+`useGridFilters` returns `spec`, `setSpec`, `setClause(key, clause | undefined)`, `clear()`, remapped `rows` / `getCellContent` / `getOriginalIndex` (same contract as `useColumnSort`), `facets`, `status` (`idle` | `filtering`), `matched`, `truncated`, and `toSearchParams` / `fromSearchParams`. Evaluation is one synchronous pass over `min(rows, maxRows)`, memoized on `(spec, rows, getCellContent)`. Facet counts apply every clause except the field's own.
+
+`setClause` with a disallowed op throws `RangeError` when `process.env.NODE_ENV !== "production"`, otherwise no-ops.
+
+### Field kinds and ops
+
+| Kind         | Allowed ops                                                                    |
+| ------------ | ------------------------------------------------------------------------------ |
+| text, uri    | `contains`, `notContains`, `startsWith`, `endsWith`, `eq`, `empty`, `notEmpty` |
+| number, date | `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `empty`, `notEmpty`                     |
+| boolean      | `eq`, `empty`                                                                  |
+| enum         | `in`, `neq`, `empty`, `notEmpty`                                               |
+
+`FilterField`: `{ key, title, kind, values?, labels?, multiple? }`. Enum `multiple` defaults to true in the rail (checkboxes).
+
+### Stores
+
+`FilterStore` is `{ get(): FilterSpec; set(spec): void; subscribe(listener): () => void }`. Subscription in the hook is `useState` + `useEffect` (React 16–19; no `useSyncExternalStore`).
+
+- `memoryStore(initial?)` — default, ephemeral.
+- `urlStore({ param = "filter", history = "replace" | "push" })` — History API, listens to `popstate`, no-ops without `window`. Conjunction is stored as `${param}x=or`.
+
+Neither zustand nor nuqs is a dependency. Adapters:
+
+```ts
+// zustand
+function zustandStore(useStore: {
+    getState: () => { spec: FilterSpec };
+    setState: (p: { spec: FilterSpec }) => void;
+    subscribe: (l: () => void) => () => void;
+}): FilterStore {
+    return {
+        get: () => useStore.getState().spec,
+        set: spec => useStore.setState({ spec }),
+        subscribe: listener => useStore.subscribe(listener),
+    };
+}
+
+// nuqs (serialize with toSearchParams / fromSearchParams)
+function nuqsStore(get: () => URLSearchParams, set: (p: URLSearchParams) => void): FilterStore {
+    const listeners = new Set<() => void>();
+    return {
+        get: () => fromSearchParams(get()),
+        set: spec => {
+            set(toSearchParams(spec));
+            listeners.forEach(l => l());
+        },
+        subscribe: l => {
+            listeners.add(l);
+            return () => listeners.delete(l);
+        },
+    };
+}
+```
+
+### URL codec
+
+One readable param per clause, values percent-encoded. Enum values containing `,` or `:` use `%2C` / `%3A`. `decode` ignores unknown keys and invalid ops.
+
+```
+?f=status:in:draft,active&f=cost:gte:100&f=name:contains:acme&fx=or
+```
+
+`toSearchParams(spec, param?)` / `fromSearchParams(params, param?)` are also exported. Round-trip is identity for any valid spec.
+
+### FilterRail
+
+DOM chips + popovers, styled only with `--gdg-*` (`bg-cell`, `bg-header`, `text-dark`, `text-medium`, `accent-color`, `accent-fg`, `border-color`, `font-family`, `rounding-radius`). Popovers portal into `#portal` when present.
+
+Props: `filters: UseGridFiltersResult`, optional `renderField(field, { close, filters })` to replace one field's control. Keyboard: Tab, Enter/Space, Escape, arrows in lists.
+
+Headless: `useFilterRailState(filters)` returns `openKey`, `open`/`close`/`toggle`, `summary`, `isActive`, `clearField`, `clearAll`, `hasActive`, `truncated`.
+
 MIT. Part of tengrids, a fork of Glide Data Grid by Glide.

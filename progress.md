@@ -158,3 +158,11 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 - Process notes: Codex in a pane needs approvals for `gh` outside the sandbox and for writes outside the worktree (send `p`/`a`); pi resumes a headless session interactively with the same `--session-id`; DCO app fails PRs without `Signed-off-by` — decision pending (merge went through since DCO is not a required check).
 - PR1 CI on the merge commit: pending (see next entry).
 - Branch: `main` · Actor: Claude Fable 5.1
+
+### PR2 feat/filters — IN PROGRESS
+- Starting PR2: reading PRD §6, schema/AI/source surfaces, and PR1 lessons (batched edits, identity-based invalidation, tsc type tests, URL/scheme hostility, CI must build what stories import).
+- Implemented §6 in `packages/schema/src/filters`: ops table, readable per-clause codec (`toSearchParams`/`fromSearchParams`), `memoryStore`/`urlStore`, `useGridFilters` (one-pass eval + facets excluding own clause), `FilterRail` + `useFilterRailState`, linaria `--gdg-*` + `dist/index.css`.
+- Interpretations: `columns` is an optional hook arg (synthesized from fields if omitted); range from/to writes `gte`+`lte` via `setSpec`; conjunction param is `${param}x`; store subscription is `useState`+`useEffect`.
+- `useNaturalLanguageFilter` gained `onSpec`. Stories under Extra Packages/Filters (100k, urlStore, three themes, filter+sort, async server, AI chips). Visual.yml builds all workspaces. B3 Playwright functional test passed locally.
+- Suites: schema 114, ai 127, core 387, cells 64, source 7; `npm run build` and `npx storybook build` green. B1 perf timed `evaluateGridFilters` with `vi.useRealTimers()` (localeCompare fast-path for string `in`/`eq`).
+- Branch: `feat/filters` · Actor: Grok 4.6 via pi

@@ -21,9 +21,7 @@ jobs:
             - name: Install and build Storybook
               run: |
                   npm install
-                  npm run build -w packages/core
-                  npm run build -w packages/source
-                  npm run build -w packages/schema
+                  npm run build --workspaces
                   npx storybook build -o storybook-build
             - name: Screenshot stories
               if: ${{ !inputs.update_snapshots }}

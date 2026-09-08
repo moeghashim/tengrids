@@ -188,3 +188,7 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 ### PR3 feat/mcp — IN PROGRESS
 - PR: https://github.com/moeghashim/tengrids/pull/13 · last sha 5e2c603 · base main (PR2 merged as fd3ed44). C5: npx skills add https://github.com/moeghashim/tengrids#feat/mcp --skill tengrids works; /tree/feat/mcp/… is parsed as branch feat.
 - Branch: `feat/mcp` · Actor: Grok 4.6 via pi
+
+### PR3 feat/mcp — IN PROGRESS
+- Addressed Astra 1–12 and Fable 1–12 on PR #13. mcp 85 tests. C2 tsc both Next files for default/filters/ai/filters+ai. Live --refresh 102/1.
+- Branch: `feat/mcp` · Actor: Grok 4.6 via pi

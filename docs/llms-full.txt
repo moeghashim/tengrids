@@ -35,8 +35,12 @@ This is an npm-workspaces monorepo publishing five packages to npm:
 | `tengrids` | [`packages/core`](packages/core) | The grid itself |
 | `tengrids-cells` | [`packages/cells`](packages/cells) | Extra cell renderers (dropdown, sparkline, tags, date picker, …) |
 | `tengrids-source` | [`packages/source`](packages/source) | Data-source hooks (async loading, sorting, undo/redo, …) |
-| `tengrids-schema` | [`packages/schema`](packages/schema) | Declarative schema (`createSchema`, `col.*`, `useSchemaGrid`) and `FilterSpec` |
+| `tengrids-schema` | [`packages/schema`](packages/schema) | Declarative schema (`createSchema`, `col.*`, `useSchemaGrid`), `FilterSpec`, faceted filters, and `FilterRail` |
 | `tengrids-ai` | [`packages/ai`](packages/ai) | AI features, bring your own model: AI formula cells, natural-language search/filter, agent-fed data source, smart paste, bulk edit |
+
+## Schema and filters
+
+`tengrids-schema` turns one `createSchema({ name: col.text(), cost: col.number(), ... })` object into grid columns, cells, edits, and `InferRow` types via `useSchemaGrid`. `useGridFilters({ fields: schema.filterFields(), columns, rows, getCellContent, store })` evaluates a serializable `FilterSpec` in one pass, with facet counts, and remaps rows like `useColumnSort`. Persist with `memoryStore()` or `urlStore({ param: "f" })` (readable `?f=status:in:draft,active&f=cost:gte:100`); bring your own zustand/nuqs store through `FilterStore`. `<FilterRail filters={filters} />` is a chip UI styled only with `--gdg-*` (import `tengrids-schema/dist/index.css`). `useNaturalLanguageFilter({ onSpec: filters.setSpec })` writes the same spec so AI chips are editable.
 
 # ⚡ Quick Start
 

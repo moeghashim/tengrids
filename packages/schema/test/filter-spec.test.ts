@@ -43,6 +43,17 @@ describe("matchesClause", () => {
         expect(matchesClause(b(true), { column: "", op: "eq", value: true })).toBe(true);
         expect(matchesClause(b(false), { column: "", op: "eq", value: "true" })).toBe(false);
     });
+    it("in/eq/neq still use numeric, date, and accent-insensitive compare", () => {
+        expect(matchesClause(t("100"), { column: "", op: "in", value: ["1e2"] })).toBe(true);
+        expect(matchesClause(t("100"), { column: "", op: "eq", value: "1e2" })).toBe(true);
+        expect(matchesClause(t("100"), { column: "", op: "neq", value: "1e2" })).toBe(false);
+        expect(matchesClause(t("2023-04-01"), { column: "", op: "in", value: ["2023-04-01T00:00:00.000Z"] })).toBe(
+            true
+        );
+        expect(matchesClause(t("café"), { column: "", op: "in", value: ["cafe"] })).toBe(true);
+        expect(matchesClause(t("café"), { column: "", op: "eq", value: "cafe" })).toBe(true);
+        expect(matchesClause(t("café"), { column: "", op: "neq", value: "cafe" })).toBe(false);
+    });
 });
 
 describe("evaluateFilter / specColumns / findColumnIndex", () => {

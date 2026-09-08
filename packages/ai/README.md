@@ -130,6 +130,17 @@ const search = useNaturalLanguageSearch({ provider, columns, rows, getCellConten
 
 `search.status` moves `literal → compiling → compiled`; `search.spec` is the structured filter the model produced. The model receives column names and up to three sample values per column — never the table.
 
+## Natural-language filter + chips
+
+`useNaturalLanguageFilter` remaps rows like `useColumnSort`. Pass `onSpec: filters.setSpec` so the compiled spec lands in `useGridFilters` and shows up as `FilterRail` chips; editing a chip does not call the model again.
+
+```tsx
+const filters = useGridFilters({ fields: schema.filterFields(), columns, rows, getCellContent, store });
+useNaturalLanguageFilter({ provider, columns, rows, getCellContent, query, onSpec: filters.setSpec });
+<FilterRail filters={filters} />
+<DataEditor rows={filters.rows} getCellContent={filters.getCellContent} ... />
+```
+
 ## Agent-fed data source
 
 ```tsx

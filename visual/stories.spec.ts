@@ -10,6 +10,9 @@ const STORIES = [
     "glide-data-grid-dataeditor-demos--freeze-columns",
     "glide-data-grid-dataeditor-demos--automatic-row-markers",
     "glide-data-grid-dataeditor-demos--theme-per-row",
+    "extra-packages-filters--rail-default",
+    "extra-packages-filters--rail-dark",
+    "extra-packages-filters--rail-high-contrast",
 ];
 
 for (const id of STORIES) {
@@ -18,6 +21,9 @@ for (const id of STORIES) {
         // irrelevant to the grid's own rendering. Block them for stable pixels.
         await page.route(/picsum\.photos/, route => route.abort());
         await page.goto(`/iframe.html?id=${id}&viewMode=story`);
+        if (id.startsWith("extra-packages-filters--")) {
+            await page.locator('[data-testid="filter-rail"]').waitFor();
+        }
         await page.locator("canvas").first().waitFor();
         await page.evaluate(() => document.fonts.ready);
         await page.waitForTimeout(750); // let the grid's rAF/image passes settle

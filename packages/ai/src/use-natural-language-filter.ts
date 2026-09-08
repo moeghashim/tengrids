@@ -1,5 +1,6 @@
 import * as React from "react";
 import type { DataEditorProps, GridColumn } from "tengrids";
+import type { FilterSpec } from "tengrids-schema";
 import type { AiProvider } from "./provider.js";
 import { type CompiledQueryResult, useCompiledQuery } from "./use-compiled-query.js";
 
@@ -12,6 +13,8 @@ export interface UseNaturalLanguageFilterOptions {
     readonly query: string;
     readonly debounceMs?: number;
     readonly maxRows?: number;
+    /** Called whenever the compiled spec changes (or the query is cleared). Wire to `useGridFilters().setSpec`. */
+    readonly onSpec?: (spec: FilterSpec | undefined) => void;
 }
 
 export interface UseNaturalLanguageFilterResult
@@ -28,12 +31,23 @@ export interface UseNaturalLanguageFilterResult
  * it returns a remapped getCellContent + row count to spread onto the grid.
  */
 export function useNaturalLanguageFilter(options: UseNaturalLanguageFilterOptions): UseNaturalLanguageFilterResult {
-    const { getCellContent, rows, query } = options;
+    const { getCellContent, rows, query, onSpec } = options;
     const compiled = useCompiledQuery(options);
     const active = query.trim() !== "";
     const mapping = compiled.matchedRows;
 
-    const getOriginalIndex = React.useCallback((row: number) => (active ? (mapping[row] ?? row) : row), [active, mapping]);
+    React.useEffect(() => {
+        if (!active) {
+            onSpec?.(undefined);
+            return;
+        }
+        if (compiled.spec !== undefined) onSpec?.(compiled.spec);
+    }, [active, compiled.spec, onSpec]);
+
+    const getOriginalIndex = React.useCallback(
+        (row: number) => (active ? (mapping[row] ?? row) : row),
+        [active, mapping]
+    );
     const remapped = React.useCallback<DataEditorProps["getCellContent"]>(
         ([col, row]) => getCellContent([col, getOriginalIndex(row)]),
         [getCellContent, getOriginalIndex]

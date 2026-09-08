@@ -158,3 +158,19 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 - Process notes: Codex in a pane needs approvals for `gh` outside the sandbox and for writes outside the worktree (send `p`/`a`); pi resumes a headless session interactively with the same `--session-id`; DCO app fails PRs without `Signed-off-by` — decision pending (merge went through since DCO is not a required check).
 - PR1 CI on the merge commit `5bd0363`: Build ✓, Visual regression ✓, Storybook deploy ✓. Sign-off convention added: `git commit -s` (Signed-off-by: Moe Ghashim) on every agent commit, so the DCO check passes from PR2 on.
 - Branch: `main` · Actor: Claude Fable 5.1
+
+### PR2 feat/filters — IN PROGRESS
+- Starting PR2: reading PRD §6, schema/AI/source surfaces, and PR1 lessons (batched edits, identity-based invalidation, tsc type tests, URL/scheme hostility, CI must build what stories import).
+- Implemented §6 in `packages/schema/src/filters`: ops table, readable per-clause codec (`toSearchParams`/`fromSearchParams`), `memoryStore`/`urlStore`, `useGridFilters` (one-pass eval + facets excluding own clause), `FilterRail` + `useFilterRailState`, linaria `--gdg-*` + `dist/index.css`.
+- Interpretations: `columns` is an optional hook arg (synthesized from fields if omitted); range from/to writes `gte`+`lte` via `setSpec`; conjunction param is `${param}x`; store subscription is `useState`+`useEffect`.
+- `useNaturalLanguageFilter` gained `onSpec`. Stories under Extra Packages/Filters (100k, urlStore, three themes, filter+sort, async server, AI chips). Visual.yml builds all workspaces. B3 Playwright functional test passed locally.
+- Suites: schema 114, ai 127, core 387, cells 64, source 7; `npm run build` and `npx storybook build` green. B1 perf timed `evaluateGridFilters` with `vi.useRealTimers()` (localeCompare fast-path for string `in`/`eq`).
+- Branch: `feat/filters` · Actor: Grok 4.6 via pi
+- PR: https://github.com/moeghashim/tengrids/pull/12 · last sha `9f679b0` (Linux rail baselines).
+- Review round 1 (Astra 14 + Fable 10): setSpec(undefined), store.get() mutations, lazy popstate, pinned inline urlStore, readable toQueryString, enum membership, range-under-OR, sibling clear + focus restore, truncated always when capped, stories tsc, AI integration test. B6 no longer crashes.
+- Review round 2 (Astra 5/11/15, Fable 1–3): NODE_ENV try/catch around literal process.env.NODE_ENV; lossless toSearchParams.append(encodeClause); subscribe then store.get() on mount.
+- Review round 3: B1 warmup + best-of-3 (threshold 250 ms); evaluator Number/Text fast path (pre-parsed clause values, ASCII in/eq, no per-row parseNumber); esbuild transform of real rejectOp without process. Isolated B1 ~33 ms.
+- Review round 4: text fast reject only for ASCII with no digits/controls; Number fast path only when displayData is undefined or String(data); 2000-pair seeded differential vs matchesClause. Isolated B1 still ~33 ms.
+- Review round 5: deleted matchTextFast; compare() uses a module-level Intl.Collator; Number raw path requires Number.isFinite; Infinity + Thai LC_ALL child-process differential. Isolated B1 ~97 ms.
+- Review round 6: hoist prepareClause into filter-spec (parsed + folds); matchesClause = matchesPreparedClause; cellText/lower once per (row, column); no per-clause asNumber(b). Isolated B1 ~44 ms.
+

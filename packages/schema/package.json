@@ -1,8 +1,10 @@
 {
     "name": "tengrids-schema",
     "version": "6.0.4-alpha26",
-    "description": "Declarative schema, cell generators, and FilterSpec for tengrids",
-    "sideEffects": false,
+    "description": "Declarative schema, cell generators, FilterSpec, faceted filters, and FilterRail for tengrids",
+    "sideEffects": [
+        "**/*.css"
+    ],
     "type": "module",
     "browser": "dist/esm/index.js",
     "main": "dist/cjs/index.js",
@@ -13,6 +15,10 @@
             "types": "./dist/dts/index.d.ts",
             "import": "./dist/esm/index.js",
             "require": "./dist/cjs/index.js"
+        },
+        "./dist/index.css": {
+            "import": "./dist/index.css",
+            "require": "./dist/index.css"
         }
     },
     "files": [
@@ -20,7 +26,7 @@
     ],
     "scripts": {
         "build": "node ../../scripts/cli.mjs build schema",
-        "lint": "eslint src --ext .ts,.tsx && ts-helper -p ./tsconfig.json -r ./src/index.ts -c --package-regex packages/core && tsc --noEmit -p tsconfig.json",
+        "lint": "eslint src --ext .ts,.tsx && ts-helper -p ./tsconfig.json -r ./src/index.ts -c --package-regex packages/core && tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.stories.json",
         "test": "vitest"
     },
     "repository": {
@@ -40,7 +46,8 @@
         "canvas"
     ],
     "dependencies": {
-        "tengrids": "6.0.4-alpha26"
+        "tengrids": "6.0.4-alpha26",
+        "@linaria/react": "^6.3.0"
     },
     "peerDependencies": {
         "react": "^16.12.0 || 17.x || 18.x || 19.x",

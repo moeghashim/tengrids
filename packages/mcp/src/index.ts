@@ -1,10 +1,37 @@
 export { loadBundle, loadBundleFromDir, findDoc } from "./bundle.js";
-export { checkSetup, CheckSetupInputSchema, isSupportedReact } from "./check-setup.js";
-export { parseHeadings, firstTitle, storyTitle, storybookSlug } from "./markdown.js";
+export { checkSetup, CheckSetupInputSchema, isSupportedReact, CORE_PEERS } from "./check-setup.js";
+export {
+    parseHeadings,
+    parseStoryHeadings,
+    headingWithChildren,
+    firstTitle,
+    storyTitle,
+    storybookSlug,
+    storyNameFromExport,
+    firstExportedStory,
+} from "./markdown.js";
 export { confine, defaultDocsDir } from "./paths.js";
-export { assertAllowedUrl, refreshBundle, urlsFor, PAGES_ORIGIN, GITHUB_ORIGIN } from "./refresh.js";
-export { EXAMPLE_SCHEMA, scaffold, splitScaffoldFiles, ScaffoldInputSchema, SchemaInputSchema } from "./scaffold.js";
-export { searchDocs, tokenize, expandQuery } from "./search.js";
+export {
+    assertAllowedUrl,
+    refreshBundle,
+    urlsFor,
+    PAGES_ORIGIN,
+    GITHUB_ORIGIN,
+    REFRESH_REQUEST_MS,
+    REFRESH_TOTAL_MS,
+    REFRESH_CONCURRENCY,
+} from "./refresh.js";
+export {
+    EXAMPLE_SCHEMA,
+    scaffold,
+    splitScaffoldFiles,
+    remapFilteredEdit,
+    printIdent,
+    ScaffoldInputSchema,
+    SchemaInputSchema,
+    ColumnInputSchema,
+} from "./scaffold.js";
+export { searchDocs, tokenize, expandQuery, indexBundle, QUERY_SYNONYMS } from "./search.js";
 export { createTengridsServer, startStdioServer } from "./server.js";
 export {
     listDocs,

@@ -14,7 +14,9 @@ function isDocEntry(value: unknown): value is DocEntry {
     return rec.headings.every(h => {
         if (typeof h !== "object" || h === null) return false;
         const heading = h as Record<string, unknown>;
-        return typeof heading.heading === "string" && typeof heading.text === "string";
+        return (
+            typeof heading.heading === "string" && typeof heading.text === "string" && typeof heading.level === "number"
+        );
     });
 }
 

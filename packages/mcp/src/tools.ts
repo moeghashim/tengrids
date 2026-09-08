@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { findDoc } from "./bundle.js";
 import { checkSetup, CheckSetupInputSchema } from "./check-setup.js";
-import { firstExportedStory, storybookSlug } from "./markdown.js";
+import { firstExportedStory, headingWithChildren, storybookSlug } from "./markdown.js";
 import { scaffold, ScaffoldInputSchema } from "./scaffold.js";
 import { searchDocs } from "./search.js";
 import type { DocBundle } from "./types.js";
@@ -60,17 +60,17 @@ export function getDoc(bundle: DocBundle, input: z.infer<typeof GetDocInputSchem
         return ok(doc.text);
     }
     const needle = input.heading.toLowerCase();
-    const match = doc.headings.find(
+    const index = doc.headings.findIndex(
         h => h.heading.toLowerCase() === needle || h.heading.toLowerCase().includes(needle)
     );
-    if (match === undefined) {
+    if (index < 0) {
         const available = doc.headings.map(h => h.heading).filter(h => h.length > 0);
         return fail(
             `heading "${input.heading}" not found in ${doc.id}` +
                 (available.length > 0 ? `. Headings: ${available.join("; ")}` : "")
         );
     }
-    return ok(`## ${match.heading}\n\n${match.text}`);
+    return ok(headingWithChildren(doc.headings, index));
 }
 
 export function searchDocsTool(bundle: DocBundle, input: z.infer<typeof SearchDocsInputSchema>): ToolResult {
@@ -84,11 +84,7 @@ export function searchDocsTool(bundle: DocBundle, input: z.infer<typeof SearchDo
 }
 
 export function getExample(bundle: DocBundle, input: z.infer<typeof GetExampleInputSchema>): ToolResult {
-    const stories = {
-        ...bundle,
-        docs: bundle.docs.filter(doc => doc.id.startsWith("story-") || doc.path.endsWith(".stories.tsx")),
-    };
-    const hits = searchDocs(stories, input.query, 1);
+    const hits = searchDocs(bundle, input.query, 1, { storiesOnly: true });
     if (hits.length === 0) {
         return fail(`no story matched ${JSON.stringify(input.query)}`);
     }

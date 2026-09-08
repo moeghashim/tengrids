@@ -1,6 +1,7 @@
 export type DocHeading = {
     heading: string;
     text: string;
+    level: number;
 };
 
 export type DocEntry = {

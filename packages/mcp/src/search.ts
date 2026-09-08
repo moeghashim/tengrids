@@ -4,31 +4,70 @@ const K1 = 1.2;
 const B = 0.75;
 const EXCERPT = 300;
 
-type Section = {
+/**
+ * Query expansions used by `search_docs`. A phrase or token in the query adds
+ * extra index terms so troubleshooting language hits the right section.
+ *
+ * - blank / empty / nothing / invisible → portal, prerequisites, css, height
+ * - dark / theme / colors / theming → theme, theming
+ */
+export const QUERY_SYNONYMS: readonly { match: RegExp; extra: readonly string[] }[] = [
+    {
+        match: /\b(blank|empty|nothing|invisible)\b/iu,
+        extra: ["portal", "prerequisites", "css", "height"],
+    },
+    {
+        match: /\b(dark|theme|colors|theming)\b/iu,
+        extra: ["theme", "theming"],
+    },
+];
+
+type IndexedSection = {
     id: string;
     heading: string;
     path: string;
     text: string;
-    tokens: string[];
+    story: boolean;
+    tf: Map<string, number>;
+    dl: number;
 };
 
-export function tokenize(value: string): string[] {
-    return value
-        .toLowerCase()
-        .split(/[^a-z0-9]+/u)
-        .filter(token => token.length >= 2);
+export type SearchIndex = {
+    sections: IndexedSection[];
+    df: Map<string, number>;
+    avgdl: number;
+};
+
+const indexCache = new WeakMap<DocBundle, SearchIndex>();
+
+function stem(token: string): string {
+    if (token === "frozen" || token === "freeze" || token === "freezing" || token === "freezes") {
+        return "freez";
+    }
+    return token;
 }
 
-/** Expand well-known troubleshooting phrases onto the sections they refer to (C3). */
+function splitCamel(token: string): string[] {
+    const parts = token.split(/(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])/u);
+    if (parts.length <= 1) return [];
+    return parts.filter(part => part.length >= 2).map(part => stem(part.toLowerCase()));
+}
+
+export function tokenize(value: string): string[] {
+    const raw = value.split(/[^A-Za-z0-9]+/u).filter(token => token.length >= 2);
+    const out: string[] = [];
+    for (const token of raw) {
+        out.push(stem(token.toLowerCase()));
+        for (const part of splitCamel(token)) out.push(part);
+    }
+    return out;
+}
+
 export function expandQuery(query: string): string[] {
     const tokens = tokenize(query);
     const extra: string[] = [];
-    const lower = query.toLowerCase();
-    if (lower.includes("nothing shows up")) {
-        extra.push("portal", "prerequisites", "css", "height", "html");
-    }
-    if (lower.includes("dark mode")) {
-        extra.push("theme", "theming", "dark", "accentcolor", "bgcell");
+    for (const synonym of QUERY_SYNONYMS) {
+        if (synonym.match.test(query)) extra.push(...synonym.extra);
     }
     return [...tokens, ...extra];
 }
@@ -50,65 +89,71 @@ function excerpt(text: string, terms: string[]): string {
     return slice.slice(0, EXCERPT);
 }
 
-function sectionsOf(bundle: DocBundle): Section[] {
-    const sections: Section[] = [];
+export function indexBundle(bundle: DocBundle): SearchIndex {
+    const cached = indexCache.get(bundle);
+    if (cached !== undefined) return cached;
+
+    const sections: IndexedSection[] = [];
     for (const doc of bundle.docs) {
-        if (doc.headings.length === 0) {
-            const text = `${doc.title}\n${doc.text}`;
+        const story = doc.id.startsWith("story-") || doc.path.endsWith(".stories.tsx");
+        const blocks =
+            doc.headings.length === 0
+                ? [{ heading: doc.title, text: doc.text, path: doc.path }]
+                : doc.headings.map(h => ({
+                      heading: h.heading.length > 0 ? h.heading : doc.title,
+                      text: `${doc.title}\n${h.heading}\n${h.text}`,
+                      path: doc.path,
+                  }));
+        for (const block of blocks) {
+            const tokens = tokenize(`${block.heading}\n${block.text}\n${block.path}`);
+            const tf = new Map<string, number>();
+            for (const token of tokens) tf.set(token, (tf.get(token) ?? 0) + 1);
             sections.push({
                 id: doc.id,
-                heading: doc.title,
-                path: doc.path,
-                text: doc.text,
-                tokens: tokenize(text),
-            });
-            continue;
-        }
-        for (const heading of doc.headings) {
-            const text = `${doc.title}\n${heading.heading}\n${heading.text}`;
-            sections.push({
-                id: doc.id,
-                heading: heading.heading.length > 0 ? heading.heading : doc.title,
-                path: doc.path,
-                text: heading.text,
-                tokens: tokenize(text),
+                heading: block.heading,
+                path: block.path,
+                text: block.text,
+                story,
+                tf,
+                dl: tokens.length,
             });
         }
     }
-    return sections;
+
+    const df = new Map<string, number>();
+    for (const section of sections) {
+        for (const term of section.tf.keys()) {
+            df.set(term, (df.get(term) ?? 0) + 1);
+        }
+    }
+    const nDocs = Math.max(sections.length, 1);
+    const avgdl = sections.reduce((sum, section) => sum + section.dl, 0) / nDocs;
+    const index: SearchIndex = { sections, df, avgdl };
+    indexCache.set(bundle, index);
+    return index;
 }
 
-export function searchDocs(bundle: DocBundle, query: string, limit = 10): SearchHit[] {
+export function searchDocs(
+    bundle: DocBundle,
+    query: string,
+    limit = 10,
+    options: { storiesOnly?: boolean } = {}
+): SearchHit[] {
     const terms = expandQuery(query);
     if (terms.length === 0) return [];
-    const sections = sectionsOf(bundle);
+    const index = indexBundle(bundle);
+    const sections = options.storiesOnly === true ? index.sections.filter(s => s.story) : index.sections;
     const nDocs = sections.length;
     if (nDocs === 0) return [];
 
-    const df = new Map<string, number>();
-    for (const term of new Set(terms)) {
-        let count = 0;
-        for (const section of sections) {
-            if (section.tokens.includes(term)) count++;
-        }
-        df.set(term, count);
-    }
-
-    const avgdl = sections.reduce((sum, section) => sum + section.tokens.length, 0) / nDocs;
     const hits: SearchHit[] = [];
-
     for (const section of sections) {
-        const tf = new Map<string, number>();
-        for (const token of section.tokens) {
-            tf.set(token, (tf.get(token) ?? 0) + 1);
-        }
         let score = 0;
         for (const term of terms) {
-            const freq = tf.get(term) ?? 0;
-            const docFreq = df.get(term) ?? 0;
-            const idf = Math.log((nDocs - docFreq + 0.5) / (docFreq + 0.5) + 1);
-            const dl = section.tokens.length;
-            score += (idf * (freq * (K1 + 1))) / (freq + K1 * (1 - B + (B * dl) / avgdl));
+            const freq = section.tf.get(term) ?? 0;
+            const docFreq = index.df.get(term) ?? 0;
+            const idf = Math.log((index.sections.length - docFreq + 0.5) / (docFreq + 0.5) + 1);
+            score += (idf * (freq * (K1 + 1))) / (freq + K1 * (1 - B + (B * section.dl) / index.avgdl));
         }
         const headingLow = section.heading.toLowerCase();
         const pathLow = section.path.toLowerCase();

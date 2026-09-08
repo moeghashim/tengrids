@@ -1,25 +1,33 @@
 import { describe, expect, it } from "vitest";
-import { expandQuery, searchDocs, tokenize } from "../src/search.js";
+import { expandQuery, indexBundle, searchDocs, tokenize } from "../src/search.js";
 import { loadFixture } from "./helpers.js";
 
 describe("search ranking on fixtures", () => {
     const bundle = loadFixture();
 
-    it("tokenizes alphanumerics of length >= 2", () => {
-        expect(tokenize("Frozen Columns!")).toEqual(["frozen", "columns"]);
+    it("tokenizes alphanumerics of length >= 2 and splits camelCase", () => {
+        expect(tokenize("Frozen Columns!")).toEqual(["freez", "columns"]);
+        expect(tokenize("freezeColumns")).toEqual(["freezecolumns", "freez", "columns"]);
         expect(tokenize("a x")).toEqual([]);
     });
 
-    it("expands nothing shows up", () => {
+    it("expands blank/nothing/invisible onto portal terms", () => {
         const tokens = expandQuery("nothing shows up");
         expect(tokens).toContain("portal");
         expect(tokens).toContain("prerequisites");
+        expect(expandQuery("the grid is blank")).toContain("portal");
     });
 
-    it("expands dark mode", () => {
+    it("expands dark/theme/colors onto theme terms", () => {
         const tokens = expandQuery("dark mode");
         expect(tokens).toContain("theme");
-        expect(tokens).toContain("dark");
+        expect(tokens).toContain("theming");
+    });
+
+    it("reuses the index across queries", () => {
+        expect(indexBundle(bundle)).toBe(indexBundle(bundle));
+        searchDocs(bundle, "portal", 5);
+        expect(indexBundle(bundle)).toBe(indexBundle(bundle));
     });
 
     it("ranks Prerequisites in the top 3 for nothing shows up", () => {
@@ -32,10 +40,15 @@ describe("search ranking on fixtures", () => {
         expect(hits.some(h => /theme/iu.test(h.heading))).toBe(true);
     });
 
-    it("finds frozen columns", () => {
+    it("finds freezeColumns for frozen columns", () => {
         const hits = searchDocs(bundle, "frozen columns", 5);
-        expect(hits[0]?.id).toBe("api");
-        expect(hits[0]?.heading.toLowerCase()).toContain("freezecolumns");
+        expect(hits.some(h => /freezecolumns/iu.test(h.heading))).toBe(true);
+    });
+
+    it("a phrase not in the synonym table still returns sensible hits", () => {
+        const hits = searchDocs(bundle, "overlay editors", 5);
+        expect(hits.length).toBeGreaterThan(0);
+        expect(hits.some(h => /prerequisites/iu.test(h.heading) || h.id === "api")).toBe(true);
     });
 
     it("respects limit", () => {

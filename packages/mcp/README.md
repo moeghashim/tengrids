@@ -6,7 +6,7 @@ stdio [MCP](https://modelcontextprotocol.io) server for [tengrids](https://githu
 npx -y tengrids-mcp
 ```
 
-Requires Node 20.10+. Docs are bundled at build time; pass `--refresh` to fetch the live copies from GitHub Pages and raw GitHub at startup (falls back to the bundle on any failure). Fetches only those two origins.
+Requires Node 20.10+. Docs are bundled at build time; pass `--refresh` to fetch the live copies from GitHub Pages and raw GitHub at startup (falls back to the bundle on any failure). Fetches only those two origins. Each request is aborted after 5s, at most 8 run at once, and the whole refresh is capped at 20s so a hung origin cannot block stdio startup.
 
 This package is **ESM-only**. The build is a plain `tsc` emit to `dist/` — no linaria, no CJS dual compile — because the server is a Node CLI, not a browser bundle.
 

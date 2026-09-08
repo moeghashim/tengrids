@@ -48,7 +48,15 @@ export default function TengridsGrid() {
     });
     return (
         <div style={{ width: "100%", height: 500 }}>
-            <DataEditor ref={gridRef} {...grid} getCellContent={ai.getCellContent} customRenderers={ai.customRenderers} onVisibleRegionChanged={ai.onVisibleRegionChanged} width={800} height={460} />
+            <DataEditor
+                ref={gridRef}
+                {...grid}
+                getCellContent={ai.getCellContent}
+                customRenderers={ai.customRenderers}
+                onVisibleRegionChanged={ai.onVisibleRegionChanged}
+                width={800}
+                height={460}
+            />
             <div id="portal" style={{ position: "fixed", left: 0, top: 0, zIndex: 9999 }} />
         </div>
     );
@@ -57,8 +65,11 @@ export default function TengridsGrid() {
 // FILE: pages/scaffold-scratch.tsx
 import dynamic from "next/dynamic";
 import React from "react";
+import type { ComponentType } from "react";
 
-const TengridsGrid = dynamic(() => import("../components/ScaffoldGrid"), { ssr: false });
+const TengridsGrid = dynamic(() => import("../components/ScaffoldGrid"), {
+    ssr: false,
+}) as ComponentType;
 
 export default function ScaffoldPage() {
     return <TengridsGrid />;
@@ -69,7 +80,7 @@ export default function ScaffoldPage() {
 exports[`scaffold snapshots > next + filters + ai 1`] = `
 "// FILE: components/ScaffoldGrid.tsx
 import React, { useState, useRef } from "react";
-import { DataEditor, type DataEditorRef } from "tengrids";
+import { DataEditor, type DataEditorRef, type Item, type EditableGridCell } from "tengrids";
 import { createSchema, col, useSchemaGrid, type InferRow, useGridFilters, FilterRail } from "tengrids-schema";
 import "tengrids/dist/index.css";
 import "tengrids-schema/dist/index.css";
@@ -113,6 +124,12 @@ export default function TengridsGrid() {
         rows: grid.rows,
         getCellContent: grid.getCellContent,
     });
+    const onCellEdited = React.useCallback(
+        (cell: Item, newVal: EditableGridCell) => {
+            grid.onCellEdited?.([cell[0], filters.getOriginalIndex(cell[1])], newVal);
+        },
+        [grid, filters]
+    );
     const ai = useAiCells({
         provider,
         columns: grid.columns,
@@ -122,7 +139,18 @@ export default function TengridsGrid() {
     return (
         <div style={{ width: "100%", height: 500 }}>
             <FilterRail filters={filters} />
-            <DataEditor ref={gridRef} {...grid} rows={filters.rows} getCellContent={ai.getCellContent} customRenderers={ai.customRenderers} onVisibleRegionChanged={ai.onVisibleRegionChanged} width={800} height={460} />
+            <DataEditor
+                ref={gridRef}
+                {...grid}
+                rows={filters.rows}
+                getCellContent={ai.getCellContent}
+                onCellEdited={onCellEdited}
+                getCellsForSelection={true}
+                customRenderers={ai.customRenderers}
+                onVisibleRegionChanged={ai.onVisibleRegionChanged}
+                width={800}
+                height={460}
+            />
             <div id="portal" style={{ position: "fixed", left: 0, top: 0, zIndex: 9999 }} />
         </div>
     );
@@ -131,8 +159,11 @@ export default function TengridsGrid() {
 // FILE: pages/scaffold-scratch.tsx
 import dynamic from "next/dynamic";
 import React from "react";
+import type { ComponentType } from "react";
 
-const TengridsGrid = dynamic(() => import("../components/ScaffoldGrid"), { ssr: false });
+const TengridsGrid = dynamic(() => import("../components/ScaffoldGrid"), {
+    ssr: false,
+}) as ComponentType;
 
 export default function ScaffoldPage() {
     return <TengridsGrid />;
@@ -143,7 +174,7 @@ export default function ScaffoldPage() {
 exports[`scaffold snapshots > next + filters 1`] = `
 "// FILE: components/ScaffoldGrid.tsx
 import React, { useState } from "react";
-import { DataEditor } from "tengrids";
+import { DataEditor, type Item, type EditableGridCell } from "tengrids";
 import { createSchema, col, useSchemaGrid, type InferRow, useGridFilters, FilterRail } from "tengrids-schema";
 import "tengrids/dist/index.css";
 import "tengrids-schema/dist/index.css";
@@ -181,10 +212,24 @@ export default function TengridsGrid() {
         rows: grid.rows,
         getCellContent: grid.getCellContent,
     });
+    const onCellEdited = React.useCallback(
+        (cell: Item, newVal: EditableGridCell) => {
+            grid.onCellEdited?.([cell[0], filters.getOriginalIndex(cell[1])], newVal);
+        },
+        [grid, filters]
+    );
     return (
         <div style={{ width: "100%", height: 500 }}>
             <FilterRail filters={filters} />
-            <DataEditor {...grid} rows={filters.rows} getCellContent={filters.getCellContent} width={800} height={460} />
+            <DataEditor
+                {...grid}
+                rows={filters.rows}
+                getCellContent={filters.getCellContent}
+                onCellEdited={onCellEdited}
+                getCellsForSelection={true}
+                width={800}
+                height={460}
+            />
             <div id="portal" style={{ position: "fixed", left: 0, top: 0, zIndex: 9999 }} />
         </div>
     );
@@ -193,8 +238,11 @@ export default function TengridsGrid() {
 // FILE: pages/scaffold-scratch.tsx
 import dynamic from "next/dynamic";
 import React from "react";
+import type { ComponentType } from "react";
 
-const TengridsGrid = dynamic(() => import("../components/ScaffoldGrid"), { ssr: false });
+const TengridsGrid = dynamic(() => import("../components/ScaffoldGrid"), {
+    ssr: false,
+}) as ComponentType;
 
 export default function ScaffoldPage() {
     return <TengridsGrid />;
@@ -238,7 +286,11 @@ export default function TengridsGrid() {
     const grid = useSchemaGrid(schema, rows, { onRowsChange: setRows });
     return (
         <div style={{ width: "100%", height: 500 }}>
-            <DataEditor {...grid} width={800} height={460} />
+            <DataEditor
+                {...grid}
+                width={800}
+                height={460}
+            />
             <div id="portal" style={{ position: "fixed", left: 0, top: 0, zIndex: 9999 }} />
         </div>
     );
@@ -247,8 +299,11 @@ export default function TengridsGrid() {
 // FILE: pages/scaffold-scratch.tsx
 import dynamic from "next/dynamic";
 import React from "react";
+import type { ComponentType } from "react";
 
-const TengridsGrid = dynamic(() => import("../components/ScaffoldGrid"), { ssr: false });
+const TengridsGrid = dynamic(() => import("../components/ScaffoldGrid"), {
+    ssr: false,
+}) as ComponentType;
 
 export default function ScaffoldPage() {
     return <TengridsGrid />;
@@ -303,7 +358,15 @@ export default function TengridsGrid() {
     });
     return (
         <div style={{ width: "100%", height: 500 }}>
-            <DataEditor ref={gridRef} {...grid} getCellContent={ai.getCellContent} customRenderers={ai.customRenderers} onVisibleRegionChanged={ai.onVisibleRegionChanged} width={800} height={460} />
+            <DataEditor
+                ref={gridRef}
+                {...grid}
+                getCellContent={ai.getCellContent}
+                customRenderers={ai.customRenderers}
+                onVisibleRegionChanged={ai.onVisibleRegionChanged}
+                width={800}
+                height={460}
+            />
             <div id="portal" style={{ position: "fixed", left: 0, top: 0, zIndex: 9999 }} />
         </div>
     );
@@ -313,7 +376,7 @@ export default function TengridsGrid() {
 
 exports[`scaffold snapshots > react + filters + ai 1`] = `
 "import React, { useState, useRef } from "react";
-import { DataEditor, type DataEditorRef } from "tengrids";
+import { DataEditor, type DataEditorRef, type Item, type EditableGridCell } from "tengrids";
 import { createSchema, col, useSchemaGrid, type InferRow, useGridFilters, FilterRail } from "tengrids-schema";
 import "tengrids/dist/index.css";
 import "tengrids-schema/dist/index.css";
@@ -357,6 +420,12 @@ export default function TengridsGrid() {
         rows: grid.rows,
         getCellContent: grid.getCellContent,
     });
+    const onCellEdited = React.useCallback(
+        (cell: Item, newVal: EditableGridCell) => {
+            grid.onCellEdited?.([cell[0], filters.getOriginalIndex(cell[1])], newVal);
+        },
+        [grid, filters]
+    );
     const ai = useAiCells({
         provider,
         columns: grid.columns,
@@ -366,7 +435,18 @@ export default function TengridsGrid() {
     return (
         <div style={{ width: "100%", height: 500 }}>
             <FilterRail filters={filters} />
-            <DataEditor ref={gridRef} {...grid} rows={filters.rows} getCellContent={ai.getCellContent} customRenderers={ai.customRenderers} onVisibleRegionChanged={ai.onVisibleRegionChanged} width={800} height={460} />
+            <DataEditor
+                ref={gridRef}
+                {...grid}
+                rows={filters.rows}
+                getCellContent={ai.getCellContent}
+                onCellEdited={onCellEdited}
+                getCellsForSelection={true}
+                customRenderers={ai.customRenderers}
+                onVisibleRegionChanged={ai.onVisibleRegionChanged}
+                width={800}
+                height={460}
+            />
             <div id="portal" style={{ position: "fixed", left: 0, top: 0, zIndex: 9999 }} />
         </div>
     );
@@ -376,7 +456,7 @@ export default function TengridsGrid() {
 
 exports[`scaffold snapshots > react + filters 1`] = `
 "import React, { useState } from "react";
-import { DataEditor } from "tengrids";
+import { DataEditor, type Item, type EditableGridCell } from "tengrids";
 import { createSchema, col, useSchemaGrid, type InferRow, useGridFilters, FilterRail } from "tengrids-schema";
 import "tengrids/dist/index.css";
 import "tengrids-schema/dist/index.css";
@@ -414,10 +494,24 @@ export default function TengridsGrid() {
         rows: grid.rows,
         getCellContent: grid.getCellContent,
     });
+    const onCellEdited = React.useCallback(
+        (cell: Item, newVal: EditableGridCell) => {
+            grid.onCellEdited?.([cell[0], filters.getOriginalIndex(cell[1])], newVal);
+        },
+        [grid, filters]
+    );
     return (
         <div style={{ width: "100%", height: 500 }}>
             <FilterRail filters={filters} />
-            <DataEditor {...grid} rows={filters.rows} getCellContent={filters.getCellContent} width={800} height={460} />
+            <DataEditor
+                {...grid}
+                rows={filters.rows}
+                getCellContent={filters.getCellContent}
+                onCellEdited={onCellEdited}
+                getCellsForSelection={true}
+                width={800}
+                height={460}
+            />
             <div id="portal" style={{ position: "fixed", left: 0, top: 0, zIndex: 9999 }} />
         </div>
     );
@@ -460,7 +554,11 @@ export default function TengridsGrid() {
     const grid = useSchemaGrid(schema, rows, { onRowsChange: setRows });
     return (
         <div style={{ width: "100%", height: 500 }}>
-            <DataEditor {...grid} width={800} height={460} />
+            <DataEditor
+                {...grid}
+                width={800}
+                height={460}
+            />
             <div id="portal" style={{ position: "fixed", left: 0, top: 0, zIndex: 9999 }} />
         </div>
     );

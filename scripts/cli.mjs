@@ -263,15 +263,20 @@ async function bootstrap() {
         console.log(`${name}: linked ${CORE_PKG} → packages/core`);
         const pkg = readJson(join(dir, "package.json"));
         const deps = { ...pkg.dependencies, ...pkg.devDependencies };
-        if (typeof deps["tengrids-schema"] === "string" && deps["tengrids-schema"].startsWith("file:")) {
-            const schemaLink = join(dir, "node_modules", "tengrids-schema");
-            rmSync(schemaLink, { recursive: true, force: true });
-            symlinkSync(
-                relative(dirname(schemaLink), join(REPO_ROOT, "packages", "schema")),
-                schemaLink,
-                process.platform === "win32" ? "junction" : "dir"
-            );
-            console.log(`${name}: linked tengrids-schema → packages/schema`);
+        for (const [depName, folder] of [
+            ["tengrids-schema", "schema"],
+            ["tengrids-ai", "ai"],
+        ]) {
+            if (typeof deps[depName] === "string" && deps[depName].startsWith("file:")) {
+                const depLink = join(dir, "node_modules", depName);
+                rmSync(depLink, { recursive: true, force: true });
+                symlinkSync(
+                    relative(dirname(depLink), join(REPO_ROOT, "packages", folder)),
+                    depLink,
+                    process.platform === "win32" ? "junction" : "dir"
+                );
+                console.log(`${name}: linked ${depName} → packages/${folder}`);
+            }
         }
     }
 }
@@ -281,22 +286,54 @@ async function bootstrap() {
 function parseHeadings(text) {
     const headings = [];
     let heading = "";
+    let level = 0;
     let buf = [];
+    let inFence = false;
     const flush = () => {
         const body = buf.join("\n").replace(/\s+$/u, "");
-        if (heading.length > 0 || body.length > 0) headings.push({ heading, text: body });
+        if (heading.length > 0 || body.length > 0) headings.push({ heading, text: body, level });
         buf = [];
     };
     for (const line of text.split(/\n/u)) {
+        if (/^```/u.test(line)) {
+            inFence = !inFence;
+            buf.push(line);
+            continue;
+        }
         const m = /^(#{1,6})\s+(.*)$/u.exec(line);
-        if (m) {
+        if (!inFence && m) {
             flush();
+            level = m[1].length;
             heading = m[2].trim();
         } else {
             buf.push(line);
         }
     }
     flush();
+    return headings;
+}
+
+const STORY_HELPERS = new Set(["Frame", "Box", "Wrapper", "Decorator"]);
+
+function parseStoryHeadings(src) {
+    const matches = [...src.matchAll(/export const ([A-Z][A-Za-z0-9]*)/gu)];
+    const headings = [];
+    for (let i = 0; i < matches.length; i++) {
+        const name = matches[i][1];
+        if (STORY_HELPERS.has(name)) continue;
+        const start = matches[i].index ?? 0;
+        let end = src.length;
+        for (let j = i + 1; j < matches.length; j++) {
+            if (!STORY_HELPERS.has(matches[j][1])) {
+                end = matches[j].index ?? src.length;
+                break;
+            }
+        }
+        headings.push({ heading: name, text: src.slice(start, end), level: 2 });
+    }
+    if (headings.length === 0) {
+        return [{ heading: storyTitle(src, "Story"), text: src, level: 1 }];
+    }
     return headings;
 }
 
@@ -341,7 +378,7 @@ function docsBundle() {
             id,
             title: story ? storyTitle(text, fallbackTitle) : firstTitle(text, fallbackTitle),
             path: rel,
-            headings: story ? [{ heading: storyTitle(text, fallbackTitle), text }] : parseHeadings(text),
+            headings: story ? parseStoryHeadings(text) : parseHeadings(text),
             text,
         });
     };

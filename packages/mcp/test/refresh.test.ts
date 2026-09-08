@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { assertAllowedUrl, GITHUB_ORIGIN, PAGES_ORIGIN, refreshBundle, urlsFor } from "../src/refresh.js";
+import {
+    assertAllowedUrl,
+    GITHUB_ORIGIN,
+    PAGES_ORIGIN,
+    REFRESH_REQUEST_MS,
+    refreshBundle,
+    urlsFor,
+} from "../src/refresh.js";
 import { loadFixture } from "./helpers.js";
 
 describe("refresh origins", () => {
@@ -63,6 +70,7 @@ describe("refresh fallback", () => {
         expect(result.refreshed).toBeGreaterThan(0);
         const api = result.bundle.docs.find(d => d.id === "api");
         expect(api?.text).toContain("refreshed portal docs");
+        expect(api?.headings.some(h => h.level === 2)).toBe(true);
     });
 
     it("falls back when the response is not ok", async () => {
@@ -75,4 +83,43 @@ describe("refresh fallback", () => {
         expect(result.refreshed).toBe(0);
         expect(result.bundle.docs.map(d => d.id)).toEqual(bundle.docs.map(d => d.id));
     });
+
+    it("aborts a stalled header fetch and keeps the bundle copy", async () => {
+        const bundle = { version: "1", docs: [loadFixture().docs[0]] };
+        const result = await refreshBundle(bundle, (_url, init) => {
+            return new Promise((resolve, reject) => {
+                const timer = setTimeout(() => resolve({ ok: true, status: 200, text: async () => "late" }), 30_000);
+                init?.signal?.addEventListener("abort", () => {
+                    clearTimeout(timer);
+                    reject(Object.assign(new Error("aborted"), { name: "AbortError" }));
+                });
+            });
+        });
+        expect(result.refreshed).toBe(0);
+        expect(result.failed).toBe(1);
+        expect(result.bundle.docs[0]?.text).toBe(bundle.docs[0]?.text);
+        expect(REFRESH_REQUEST_MS).toBe(5000);
+    }, 15_000);
+
+    it("keeps successful docs when a sibling times out", async () => {
+        const fixture = loadFixture();
+        const bundle = { version: "1", docs: [fixture.docs[0], fixture.docs[1]] };
+        const result = await refreshBundle(bundle, (url, init) => {
+            if (url.includes("API.md")) {
+                return Promise.resolve({
+                    ok: true,
+                    status: 200,
+                    text: async () => "# API reference\n\n## HTML/CSS Prerequisites\n\nmixed ok\n",
+                });
+            }
+            return new Promise((_resolve, reject) => {
+                init?.signal?.addEventListener("abort", () => {
+                    reject(Object.assign(new Error("aborted"), { name: "AbortError" }));
+                });
+            });
+        });
+        expect(result.refreshed).toBeGreaterThanOrEqual(1);
+        expect(result.bundle.docs[0]?.text).toContain("mixed ok");
+        expect(result.bundle.docs[1]?.text).toBe(bundle.docs[1]?.text);
+    }, 15_000);
 });

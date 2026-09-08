@@ -49,6 +49,9 @@ describe("tool zod validation", () => {
         expect(ScaffoldInputSchema.safeParse({ schema: { n: { kind: "text" } } }).success).toBe(true);
         expect(ScaffoldInputSchema.safeParse({ schema: { n: { kind: "custom" } } }).success).toBe(false);
         expect(ScaffoldInputSchema.safeParse({ schema: { n: { kind: "text", accessor: true } } }).success).toBe(false);
+        expect(ScaffoldInputSchema.safeParse({ schema: { n: { kind: "number", format: "bogus" } } }).success).toBe(
+            false
+        );
     });
 
     it("check_setup requires packageJson", () => {
@@ -92,6 +95,13 @@ describe("tool error paths", () => {
         expect(result.text).toMatch(/portal/iu);
     });
 
+    it("get_doc includes nested factory headings", () => {
+        const result = getDoc(bundle, { id: "readme-schema", heading: "Column factories" });
+        expect(result.isError).toBe(false);
+        expect(result.text).toContain("col.text");
+        expect(result.text).toContain("col.number");
+    });
+
     it("get_doc returns the whole document", () => {
         const result = getDoc(bundle, { id: "api" });
         expect(result.isError).toBe(false);
@@ -107,7 +117,9 @@ describe("tool error paths", () => {
     it("get_example returns a story", () => {
         const result = getExample(bundle, { query: "FreezeColumns" });
         expect(result.isError).toBe(false);
-        expect(result.text).toContain("url: https://moeghashim.github.io/tengrids/");
+        expect(result.text).toContain(
+            "url: https://moeghashim.github.io/tengrids/?path=/story/glide-data-grid-dataeditor-demos--freeze-columns"
+        );
         expect(result.text).toContain("FreezeColumns");
     });
 

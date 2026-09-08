@@ -17,4 +17,10 @@ describe("C3 search ranking on the real bundle", () => {
         const hits = searchDocs(bundle, "dark mode", 3);
         expect(hits.some(h => /theme/iu.test(h.heading))).toBe(true);
     });
+
+    it("frozen columns → freezeColumns in the top 3", () => {
+        const bundle = loadBundleFromDir(realBundleDir());
+        const hits = searchDocs(bundle, "frozen columns", 3);
+        expect(hits.some(h => /freezecolumns/iu.test(h.heading))).toBe(true);
+    });
 });

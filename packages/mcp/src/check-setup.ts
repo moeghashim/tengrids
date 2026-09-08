@@ -15,34 +15,99 @@ type Pkg = {
     peerDependencies?: Record<string, string>;
 };
 
+/** Core's required peers (llms.txt / packages/core/package.json). */
+export const CORE_PEERS = ["react", "react-dom", "lodash", "marked", "react-responsive-carousel"] as const;
+
+const REACT_WITNESSES = ["16.12.0", "16.14.0", "17.0.0", "17.0.2", "18.0.0", "18.3.1", "19.0.0", "19.2.8"] as const;
+
 function allDeps(pkg: Pkg): Record<string, string> {
     return { ...pkg.peerDependencies, ...pkg.devDependencies, ...pkg.dependencies };
 }
 
-/** React 16.12+ through 19.x, matching tengrids peer range. */
-export function isSupportedReact(range: string): boolean {
-    const match = /(\d+)\.(\d+)/u.exec(range);
-    if (match === null) {
-        if (/\b16\b/u.test(range)) return true;
-        if (/\b17\b/u.test(range) || /\b18\b/u.test(range) || /\b19\b/u.test(range)) return true;
-        return false;
+function parseVersion(value: string): [number, number, number] | undefined {
+    const match = /^(\d+)(?:\.(\d+)(?:\.(\d+))?)?/u.exec(value.trim());
+    if (match === null) return undefined;
+    return [Number(match[1]), Number(match[2]), Number(match[3] ?? 0)];
+}
+
+function cmp(a: [number, number, number], b: [number, number, number]): number {
+    return a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+}
+
+function satisfiesOne(spec: string, version: string): boolean {
+    const v = parseVersion(version);
+    if (v === undefined) return false;
+    const token = spec.trim();
+    if (token === "*" || token === "x" || token === "X") return true;
+    if (/^\d+\.x$/iu.test(token) || /^\d+$/u.test(token)) {
+        return v[0] === Number(token.split(".")[0]);
     }
-    const major = Number(match[1]);
-    const minor = Number(match[2]);
-    if (major === 16) return minor >= 12 || range.includes("^16") || range.includes("16.x");
-    return major === 17 || major === 18 || major === 19;
+    if (token.startsWith("^")) {
+        const base = parseVersion(token.slice(1));
+        if (base === undefined) return false;
+        return cmp(v, base) >= 0 && v[0] === base[0];
+    }
+    if (token.startsWith("~")) {
+        const base = parseVersion(token.slice(1));
+        if (base === undefined) return false;
+        return cmp(v, base) >= 0 && v[0] === base[0] && v[1] === base[1];
+    }
+    if (token.startsWith(">=")) {
+        const base = parseVersion(token.slice(2));
+        return base !== undefined && cmp(v, base) >= 0;
+    }
+    if (token.startsWith("<=")) {
+        const base = parseVersion(token.slice(2));
+        return base !== undefined && cmp(v, base) <= 0;
+    }
+    if (token.startsWith(">")) {
+        const base = parseVersion(token.slice(1));
+        return base !== undefined && cmp(v, base) > 0;
+    }
+    if (token.startsWith("<")) {
+        const base = parseVersion(token.slice(1));
+        return base !== undefined && cmp(v, base) < 0;
+    }
+    const exact = parseVersion(token.startsWith("=") ? token.slice(1) : token);
+    return exact !== undefined && cmp(v, exact) === 0;
+}
+
+function rangeIncludes(range: string, version: string): boolean {
+    return range.split("||").some(part => {
+        const tokens = part.trim().split(/\s+/u).filter(Boolean);
+        return tokens.length > 0 && tokens.every(token => satisfiesOne(token, version));
+    });
+}
+
+/** True when the given npm range includes at least one React 16.12–19 release. */
+export function isSupportedReact(range: string): boolean {
+    const cleaned = range.trim();
+    if (cleaned.length === 0) return false;
+    if (/latest|workspace:|file:|git\+|https?:/iu.test(cleaned)) return false;
+    return REACT_WITNESSES.some(witness => rangeIncludes(cleaned, witness));
+}
+
+function stripComments(source: string): string {
+    return source
+        .replace(/\/\*[\s\S]*?\*\//gu, "")
+        .replace(/\{\s*\/\*[\s\S]*?\*\/\s*\}/gu, "")
+        .replace(/(^|[^:\\\w])\/\/.*$/gmu, "$1");
 }
 
 function hasCssImport(source: string): boolean {
-    return /tengrids\/(dist\/)?index\.css/u.test(source);
+    const code = stripComments(source);
+    return /(?:import|require)\s*(?:\(\s*)?["']tengrids\/(?:dist\/)?index\.css["']/u.test(code);
 }
 
-function hasPortal(source: string): boolean {
-    return (
-        /id=["']portal["']/u.test(source) ||
-        /getElementById\(\s*["']portal["']\s*\)/u.test(source) ||
-        /portalElementRef/u.test(source)
-    );
+type PortalStatus = "present" | "missing" | "uncertain";
+
+function portalStatus(source: string): PortalStatus {
+    const code = stripComments(source);
+    const created =
+        /id\s*=\s*(?:["']portal["']|\{\s*["']portal["']\s*\})/u.test(code) || /portalElementRef\s*=\s*\{/u.test(code);
+    if (created) return "present";
+    if (/getElementById\(\s*["']portal["']\s*\)/u.test(code)) return "uncertain";
+    return "missing";
 }
 
 export function checkSetup(input: CheckSetupInput): string {
@@ -59,6 +124,7 @@ export function checkSetup(input: CheckSetupInput): string {
     const deps = allDeps(pkg);
     const ok: string[] = [];
     const issues: string[] = [];
+    const notes: string[] = [];
 
     if (typeof deps.tengrids === "string" && deps.tengrids.length > 0) {
         ok.push(`tengrids is listed (${deps.tengrids})`);
@@ -66,13 +132,28 @@ export function checkSetup(input: CheckSetupInput): string {
         issues.push("tengrids is missing from dependencies / peerDependencies");
     }
 
-    const react = deps.react;
-    if (typeof react === "string" && react.length > 0 && isSupportedReact(react)) {
-        ok.push(`React ${react} is supported (16.12–19)`);
-    } else if (typeof react === "string" && react.length > 0) {
-        issues.push(`React ${react} is not supported (need ^16.12 || 17 || 18 || 19)`);
-    } else {
-        issues.push("react is missing from dependencies / peerDependencies");
+    for (const peer of CORE_PEERS) {
+        const version = deps[peer];
+        if (typeof version !== "string" || version.length === 0) {
+            issues.push(`${peer} is missing from dependencies / peerDependencies`);
+            continue;
+        }
+        if (peer === "react" || peer === "react-dom") {
+            if (isSupportedReact(version)) {
+                ok.push(`${peer} ${version} is supported (16.12–19)`);
+            } else {
+                issues.push(`${peer} ${version} is not supported (need ^16.12 || 17 || 18 || 19)`);
+            }
+        } else {
+            ok.push(`${peer} is listed (${version})`);
+        }
+    }
+
+    for (const extra of ["tengrids-schema", "tengrids-ai"] as const) {
+        const version = deps[extra];
+        if (typeof version === "string" && version.length > 0) {
+            notes.push(`${extra} is listed (${version})`);
+        }
     }
 
     if (input.appSource !== undefined && input.appSource.length > 0) {
@@ -83,8 +164,13 @@ export function checkSetup(input: CheckSetupInput): string {
                 'Missing `import "tengrids/dist/index.css"` — the grid will look unstyled and overlays may not size'
             );
         }
-        if (hasPortal(input.appSource)) {
+        const portal = portalStatus(input.appSource);
+        if (portal === "present") {
             ok.push("#portal (or portalElementRef) is present");
+        } else if (portal === "uncertain") {
+            notes.push(
+                'Uncertain: found getElementById("portal") but no #portal element or portalElementRef. Overlay editors need a real portal node.'
+            );
         } else {
             issues.push(
                 'Missing `#portal` — overlay editors mount into document.getElementById("portal"). Add `<div id="portal" style="position:fixed;left:0;top:0;z-index:9999" />` as the last child of <body>, or pass portalElementRef'
@@ -96,8 +182,16 @@ export function checkSetup(input: CheckSetupInput): string {
 
     const lines = ["check_setup", ""];
     for (const line of ok) lines.push(`✓ ${line}`);
+    for (const line of notes) lines.push(`• ${line}`);
     for (const line of issues) lines.push(`✗ ${line}`);
     lines.push("");
-    lines.push(issues.length === 0 ? "All checks passed." : `${issues.length} issue(s) to fix.`);
+    const uncertain = notes.some(line => line.startsWith("Uncertain"));
+    if (issues.length === 0 && !uncertain) {
+        lines.push("All checks passed.");
+    } else if (issues.length === 0) {
+        lines.push("Checks passed with warnings.");
+    } else {
+        lines.push(`${issues.length} issue(s) to fix.`);
+    }
     return lines.join("\n");
 }

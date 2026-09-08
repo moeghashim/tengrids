@@ -151,3 +151,10 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 - Round 3: `pendingRef` is cleared on a microtask at the end of one synchronous `onCellEdited` batch so a declined edit cannot leak into a later field update.
 - Suites: schema 54, ai 126, core 387, cells 64, source 7; `npm run build` green.
 - Branch: `feat/schema` · Actor: Grok 4.6 via pi
+
+### PR1 feat/schema — MERGED
+- Orchestration: Grok 4.6 (via `pi`, Orca pane) executed PR1; GPT Astra (Codex `gpt-6-astra` medium, Orca pane) reviewed in four rounds (10 findings → approve); Claude Fable 5.1 reviewed in two rounds (10 + 5 findings) and signed off on `9245638`; Moe merged as `5bd0363` (merge commit, PR #11).
+- Real bugs caught in review: batched `onCellEdited` calls overwrote each other (core dispatches paste/fill edits synchronously); ISO dates rolled over (`2026-02-30` → March 2); `print()` emitted unquoted keys and callback stubs; the `InferRow` type test never ran under `tsc`; `col.enum({ multiple: boolean })` inferred a scalar; `normalizeUri` accepted `javascript://`; the visual job built only core before Storybook; `cli version` pinned only core.
+- Process notes: Codex in a pane needs approvals for `gh` outside the sandbox and for writes outside the worktree (send `p`/`a`); pi resumes a headless session interactively with the same `--session-id`; DCO app fails PRs without `Signed-off-by` — decision pending (merge went through since DCO is not a required check).
+- PR1 CI on the merge commit: pending (see next entry).
+- Branch: `main` · Actor: Claude Fable 5.1

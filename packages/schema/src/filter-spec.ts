@@ -139,6 +139,10 @@ function cellText(cell: GridCell): string {
     }
 }
 
+export function parsedCellNumber(cell: GridCell): number | undefined {
+    return asNumber(cellText(cell));
+}
+
 export function asNumber(v: unknown): number | undefined {
     if (typeof v === "number") return Number.isNaN(v) ? undefined : v;
     if (typeof v === "boolean") return v ? 1 : 0;
@@ -151,16 +155,21 @@ export function asNumber(v: unknown): number | undefined {
     return undefined;
 }
 
-function compare(a: string, b: unknown): number | undefined {
-    const an = asNumber(a);
+const collator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
+
+function compare(a: string, b: unknown, an: number | undefined): number | undefined {
     const bn = asNumber(b);
     if (an !== undefined && bn !== undefined) return an === bn ? 0 : an < bn ? -1 : 1;
-    const bs = String(b ?? "");
-    return a.localeCompare(bs, undefined, { sensitivity: "base", numeric: true });
+    return collator.compare(a, String(b ?? ""));
 }
 
 /** Evaluate one clause against one cell. */
 export function matchesClause(cell: GridCell, clause: FilterClause): boolean {
+    return matchesClauseParsed(cell, clause, asNumber(cellText(cell)));
+}
+
+/** Same as `matchesClause` with a precomputed `asNumber(cellText(cell))`. */
+export function matchesClauseParsed(cell: GridCell, clause: FilterClause, parsedText: number | undefined): boolean {
     const text = cellText(cell);
     const lower = text.toLowerCase();
     const v = clause.value;
@@ -182,20 +191,20 @@ export function matchesClause(cell: GridCell, clause: FilterClause): boolean {
             const list = Array.isArray(v) ? v : v === undefined ? [] : [v];
             return list.some(x => {
                 if (typeof x === "string" && lower === x.toLowerCase()) return true;
-                return compare(text, x) === 0;
+                return compare(text, x, parsedText) === 0;
             });
         }
         case "eq":
             if (typeof v === "string" && lower === vs) return true;
-            return compare(text, v) === 0;
+            return compare(text, v, parsedText) === 0;
         case "neq":
             if (typeof v === "string" && lower === vs) return false;
-            return compare(text, v) !== 0;
+            return compare(text, v, parsedText) !== 0;
         case "gt":
         case "gte":
         case "lt":
         case "lte": {
-            const c = compare(text, v);
+            const c = compare(text, v, parsedText);
             if (c === undefined) return false;
             return clause.op === "gt" ? c > 0 : clause.op === "gte" ? c >= 0 : clause.op === "lt" ? c < 0 : c <= 0;
         }

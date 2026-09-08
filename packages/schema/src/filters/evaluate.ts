@@ -3,6 +3,8 @@ import {
     asNumber,
     findColumnIndex,
     matchesClause,
+    matchesClauseParsed,
+    parsedCellNumber,
     type FilterClause,
     type FilterOp,
     type FilterSpec,
@@ -45,100 +47,19 @@ function isAlwaysValuesKind(kind: FilterField["kind"]): boolean {
     return kind === "enum" || kind === "boolean";
 }
 
-/** ASCII with no digits and no controls — localeCompare base+numeric equals case-fold. */
-function isPlainAsciiFold(s: string): boolean {
-    for (let i = 0; i < s.length; i++) {
-        const c = s.charCodeAt(i);
-        if (c < 0x20 || c === 0x7f || c > 127) return false;
-        if (c >= 48 && c <= 57) return false;
-    }
-    return true;
-}
-
 interface PreparedClause {
     readonly clause: FilterClause;
     readonly parsed: number | undefined;
     readonly inParsed: readonly (number | undefined)[] | undefined;
-    readonly fold: string;
-    readonly foldPlain: boolean;
-    readonly inFolds: readonly string[] | undefined;
-    readonly inAllPlain: boolean;
-    readonly inAnyNumeric: boolean;
 }
 
 function prepareClause(clause: FilterClause): PreparedClause {
     const v = clause.value;
     if (clause.op === "in") {
         const list = Array.isArray(v) ? v : v === undefined ? [] : [v];
-        const inParsed = list.map(asNumber);
-        const inFolds = list.map(item => String(item).toLowerCase());
-        let inAllPlain = true;
-        let inAnyNumeric = false;
-        for (let i = 0; i < list.length; i++) {
-            if (!isPlainAsciiFold(inFolds[i])) inAllPlain = false;
-            if (inParsed[i] !== undefined) inAnyNumeric = true;
-        }
-        return {
-            clause,
-            parsed: undefined,
-            inParsed,
-            fold: "",
-            foldPlain: true,
-            inFolds,
-            inAllPlain,
-            inAnyNumeric,
-        };
+        return { clause, parsed: undefined, inParsed: list.map(asNumber) };
     }
-    const fold = v === undefined ? "" : String(v).toLowerCase();
-    return {
-        clause,
-        parsed: asNumber(v),
-        inParsed: undefined,
-        fold,
-        foldPlain: isPlainAsciiFold(fold),
-        inFolds: undefined,
-        inAllPlain: true,
-        inAnyNumeric: false,
-    };
-}
-
-function matchTextFast(text: string, op: FilterOp, prep: PreparedClause): boolean | undefined {
-    const lower = text.toLowerCase();
-    let parsedText: number | undefined;
-    let parsedTextReady = false;
-    const textNumber = (): number | undefined => {
-        if (!parsedTextReady) {
-            parsedText = asNumber(text);
-            parsedTextReady = true;
-        }
-        return parsedText;
-    };
-    if (op === "in") {
-        if (prep.inFolds === undefined) return undefined;
-        for (const f of prep.inFolds) {
-            if (f === lower) return true;
-        }
-        if (prep.inAnyNumeric && prep.inParsed !== undefined) {
-            const n = textNumber();
-            if (n !== undefined) {
-                for (const p of prep.inParsed) {
-                    if (p === n) return true;
-                }
-            }
-        }
-        if (isPlainAsciiFold(lower) && prep.inAllPlain) return false;
-        return undefined;
-    }
-    if (op === "eq" || op === "neq") {
-        if (prep.fold === lower) return op === "eq";
-        if (prep.parsed !== undefined) {
-            const n = textNumber();
-            if (n !== undefined) return op === "eq" ? n === prep.parsed : n !== prep.parsed;
-        }
-        if (isPlainAsciiFold(lower) && prep.foldPlain) return op !== "eq";
-        return undefined;
-    }
-    return undefined;
+    return { clause, parsed: asNumber(v), inParsed: undefined };
 }
 
 function matchNumberData(n: number, op: FilterOp, prep: PreparedClause): boolean | undefined {
@@ -186,7 +107,8 @@ export function matchesEvaluatorClause(
     cell: GridCell,
     clause: FilterClause,
     field: FilterField | undefined,
-    prep?: PreparedClause
+    prep?: PreparedClause,
+    parsedText?: { readonly value: number | undefined }
 ): boolean {
     if (
         field !== undefined &&
@@ -197,7 +119,7 @@ export function matchesEvaluatorClause(
         return matchesEnumIn(cell, clause, field);
     }
     const ready = prep ?? prepareClause(clause);
-    if (cell.kind === GridCellKind.Number && typeof cell.data === "number" && !Number.isNaN(cell.data)) {
+    if (cell.kind === GridCellKind.Number && typeof cell.data === "number" && Number.isFinite(cell.data)) {
         const display = cell.displayData;
         if (display === undefined || display === String(cell.data)) {
             const fast = matchNumberData(cell.data, clause.op, ready);
@@ -212,12 +134,7 @@ export function matchesEvaluatorClause(
         const eq = cell.data === clause.value;
         return clause.op === "eq" ? eq : !eq;
     }
-    if (cell.kind === GridCellKind.Text || cell.kind === GridCellKind.Uri) {
-        const text = cell.displayData ?? (cell.data === undefined ? "" : String(cell.data));
-        const fast = matchTextFast(text, clause.op, ready);
-        if (fast !== undefined) return fast;
-    }
-    return matchesClause(cell, clause);
+    return matchesClauseParsed(cell, clause, parsedText !== undefined ? parsedText.value : parsedCellNumber(cell));
 }
 
 /**
@@ -255,9 +172,14 @@ export function evaluateGridFilters(
     const scratch: GridCell[] = new Array(columns.length);
     const hits: boolean[] = new Array(spec.clauses.length);
     const fetched: boolean[] = new Array(columns.length);
+    const parsedReady: boolean[] = new Array(columns.length);
+    const parsedOf: Array<number | undefined> = new Array(columns.length);
 
     for (let r = 0; r < limit; r++) {
-        for (let c = 0; c < columns.length; c++) fetched[c] = false;
+        for (let c = 0; c < columns.length; c++) {
+            fetched[c] = false;
+            parsedReady[c] = false;
+        }
         for (let i = 0; i < clauseCols.length; i++) {
             const idx = clauseCols[i];
             if (idx !== -1 && fetched[idx] !== true) {
@@ -279,8 +201,19 @@ export function evaluateGridFilters(
         for (let i = 0; i < spec.clauses.length; i++) {
             const idx = clauseCols[i];
             const cell = idx === -1 ? undefined : scratch[idx];
+            let parsed: number | undefined;
+            if (cell !== undefined && idx !== -1) {
+                if (parsedReady[idx] !== true) {
+                    parsedOf[idx] = parsedCellNumber(cell);
+                    parsedReady[idx] = true;
+                }
+                parsed = parsedOf[idx];
+            }
             const hit =
-                cell !== undefined && matchesEvaluatorClause(cell, spec.clauses[i], clauseFields[i], prepared[i]);
+                cell !== undefined &&
+                matchesEvaluatorClause(cell, spec.clauses[i], clauseFields[i], prepared[i], {
+                    value: parsed,
+                });
             hits[i] = hit;
             if (hit) fullOr = true;
             else fullAnd = false;

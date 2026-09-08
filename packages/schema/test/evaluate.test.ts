@@ -1,3 +1,6 @@
+import { execFileSync } from "node:child_process";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { GridCellKind, type GridCell, type GridColumn, type Item } from "tengrids";
 import type { FilterField, FilterSpec } from "../src/index.js";
@@ -155,6 +158,18 @@ describe("evaluateGridFilters", () => {
             },
             { kind: GridCellKind.Number, data: -4, displayData: "-4", allowOverlay: false },
             { kind: GridCellKind.Number, data: -4, displayData: "(4)", allowOverlay: false },
+            {
+                kind: GridCellKind.Number,
+                data: Infinity,
+                displayData: "Infinity",
+                allowOverlay: false,
+            },
+            {
+                kind: GridCellKind.Number,
+                data: -Infinity,
+                displayData: "-Infinity",
+                allowOverlay: false,
+            },
         ];
         const clauses: FilterClause[] = [
             { column: "x", op: "eq", value: 100 },
@@ -180,6 +195,10 @@ describe("evaluateGridFilters", () => {
             { column: "x", op: "eq", value: 10 },
             { column: "x", op: "eq", value: "1.23" },
             { column: "x", op: "eq", value: "12.5%" },
+            { column: "x", op: "eq", value: "1e309" },
+            { column: "x", op: "in", value: ["1e309"] },
+            { column: "x", op: "gt", value: "one" },
+            { column: "x", op: "neq", value: "1e309" },
         ];
         const numberField: FilterField = { key: "x", title: "X", kind: "number" };
         const textField: FilterField = { key: "x", title: "X", kind: "text" };
@@ -258,6 +277,25 @@ describe("evaluateGridFilters", () => {
                     `pair ${i} ${JSON.stringify(a)} vs ${clause.op} ${JSON.stringify(clause.value)}`
                 ).toBe(matchesClause(cell, clause));
             }
+        }
+    });
+
+    it("Thai default locale: evaluator agrees with matchesClause on punctuation", () => {
+        const helper = join(dirname(fileURLToPath(import.meta.url)), "thai-locale.mjs");
+        const out = execFileSync(process.execPath, [helper], {
+            encoding: "utf8",
+            env: {
+                ...process.env,
+                LANG: "th_TH.UTF-8",
+                LC_ALL: "th_TH.UTF-8",
+                LC_COLLATE: "th_TH.UTF-8",
+            },
+        });
+        const result = JSON.parse(out) as {
+            rows: readonly { op: string; agree: boolean; legacy: unknown; evaluator: unknown }[];
+        };
+        for (const row of result.rows) {
+            expect(row.agree, JSON.stringify(row)).toBe(true);
         }
     });
 });

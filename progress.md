@@ -174,3 +174,10 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 - Review round 5: deleted matchTextFast; compare() uses a module-level Intl.Collator; Number raw path requires Number.isFinite; Infinity + Thai LC_ALL child-process differential. Isolated B1 ~97 ms.
 - Review round 6: hoist prepareClause into filter-spec (parsed + folds); matchesClause = matchesPreparedClause; cellText/lower once per (row, column); no per-clause asNumber(b). Isolated B1 ~44 ms.
 
+
+### PR2 feat/filters — MERGED
+- Orchestration: Grok 4.6 (pi) executed; GPT Astra (Codex) reviewed in seven rounds (14 findings → approve on `aef975e`, confirmed with a 42,900-comparison differential check); Claude Fable 5.1 reviewed in six rounds and signed off; Moe merged as `fd3ed44` (PR #12).
+- Bugs caught in review: the AI-chips story crashed on load (`onSpec(undefined)` reached `setSpec`); `urlStore` leaked a global `popstate` listener and an inline store re-subscribed every render; `setClause` mutated from captured state; `URLSearchParams.toString()` made the 'readable' URL unreadable; a clear button nested inside the chip button; range editing under OR; multi-enum facet vs match mismatch; B1 flaked on CI (560 → 302 → 140 ms after pre-parsing clauses and a cached `Intl.Collator`).
+- Adjudication: any hand-written shortcut that predicts `localeCompare` leaks (Thai punctuation collation, Turkish i, Infinity); the evaluator now runs the identical comparator via `prepareClause` / `matchesPreparedClause`, and `matchesClause` is defined on top of them.
+- PR2 CI on the merge commit: pending (see next entry).
+- Branch: `main` · Actor: Claude Fable 5.1

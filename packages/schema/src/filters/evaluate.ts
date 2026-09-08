@@ -1,4 +1,4 @@
-import type { DataEditorProps, GridCell, GridColumn } from "tengrids";
+import { GridCellKind, type DataEditorProps, type GridCell, type GridColumn } from "tengrids";
 import { findColumnIndex, matchesClause, type FilterClause, type FilterSpec } from "../filter-spec.js";
 import type { FilterField } from "../types.js";
 import { facetStrings, numericValue } from "./cell-value.js";
@@ -38,6 +38,30 @@ function isAlwaysValuesKind(kind: FilterField["kind"]): boolean {
     return kind === "enum" || kind === "boolean";
 }
 
+/** `in` against each displayed enum/bubble item, not the joined cell text. */
+function matchesEnumIn(cell: GridCell, clause: FilterClause, field: FilterField): boolean {
+    const items = facetStrings(cell, field);
+    const list = Array.isArray(clause.value) ? clause.value : clause.value === undefined ? [] : [clause.value];
+    const sub: FilterClause = { column: clause.column, op: "in", value: list };
+    for (const item of items) {
+        const fake: GridCell = { kind: GridCellKind.Text, data: item, displayData: item, allowOverlay: false };
+        if (matchesClause(fake, sub)) return true;
+    }
+    return false;
+}
+
+function matchesEvaluatorClause(cell: GridCell, clause: FilterClause, field: FilterField | undefined): boolean {
+    if (
+        field !== undefined &&
+        field.kind === "enum" &&
+        clause.op === "in" &&
+        (field.multiple === true || cell.kind === GridCellKind.Bubble)
+    ) {
+        return matchesEnumIn(cell, clause, field);
+    }
+    return matchesClause(cell, clause);
+}
+
 /**
  * One synchronous pass over `min(rows, maxRows)`: row mapping plus facet counts.
  * Facet counts apply every clause except the field's own.
@@ -56,6 +80,7 @@ export function evaluateGridFilters(
     const conjOr = spec.conjunction === "or";
 
     const clauseCols = spec.clauses.map(c => findColumnIndex(columns, c.column));
+    const clauseFields = spec.clauses.map(c => fields.find(f => clauseMatchesField(c, f)));
     const fieldCols = fields.map(f => {
         const byKey = findColumnIndex(columns, f.key);
         return byKey === -1 ? findColumnIndex(columns, f.title) : byKey;
@@ -71,16 +96,13 @@ export function evaluateGridFilters(
     const scratch: GridCell[] = new Array(columns.length);
     const hits: boolean[] = new Array(spec.clauses.length);
     const fetched: boolean[] = new Array(columns.length);
-    const coord: [number, number] = [0, 0];
 
     for (let r = 0; r < limit; r++) {
-        coord[1] = r;
         for (let c = 0; c < columns.length; c++) fetched[c] = false;
         for (let i = 0; i < clauseCols.length; i++) {
             const idx = clauseCols[i];
             if (idx !== -1 && fetched[idx] !== true) {
-                coord[0] = idx;
-                scratch[idx] = getCellContent(coord);
+                scratch[idx] = getCellContent([idx, r]);
                 fetched[idx] = true;
             }
         }
@@ -88,8 +110,7 @@ export function evaluateGridFilters(
             if (overflow[f]) continue;
             const idx = fieldCols[f];
             if (idx !== -1 && fetched[idx] !== true) {
-                coord[0] = idx;
-                scratch[idx] = getCellContent(coord);
+                scratch[idx] = getCellContent([idx, r]);
                 fetched[idx] = true;
             }
         }
@@ -99,7 +120,7 @@ export function evaluateGridFilters(
         for (let i = 0; i < spec.clauses.length; i++) {
             const idx = clauseCols[i];
             const cell = idx === -1 ? undefined : scratch[idx];
-            const hit = cell !== undefined && matchesClause(cell, spec.clauses[i]);
+            const hit = cell !== undefined && matchesEvaluatorClause(cell, spec.clauses[i], clauseFields[i]);
             hits[i] = hit;
             if (hit) fullOr = true;
             else fullAnd = false;

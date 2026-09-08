@@ -20,7 +20,7 @@
     ],
     "scripts": {
         "build": "node ../../scripts/cli.mjs build ai",
-        "lint": "eslint src --ext .ts,.tsx",
+        "lint": "eslint src --ext .ts,.tsx && tsc --noEmit -p tsconfig.stories.json",
         "test": "vitest"
     },
     "repository": {

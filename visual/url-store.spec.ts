@@ -11,7 +11,6 @@ test("urlStore survives reload and back/forward (B3)", async ({ page }) => {
     await page.getByTestId("filter-option-status-active").click();
 
     await expect.poll(() => new URL(page.url()).searchParams.getAll("f").join("&")).toContain("status:in:active");
-    const filteredUrl = page.url();
 
     await page.reload();
     await page.locator('[data-testid="filter-rail"]').waitFor();
@@ -25,5 +24,5 @@ test("urlStore survives reload and back/forward (B3)", async ({ page }) => {
     await page.goForward();
     await page.locator('[data-testid="filter-rail"]').waitFor();
     await expect(page.getByTestId("filter-chip-status")).toContainText("active");
-    expect(page.url()).toBe(filteredUrl);
+    expect(new URL(page.url()).searchParams.getAll("f").join("&")).toContain("status:in:active");
 });

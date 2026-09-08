@@ -7,6 +7,8 @@ import { columnsFromFields, evaluateGridFilters, clauseMatchesField, type Facet 
 import { isOpAllowed } from "./ops.js";
 import { memoryStore, type FilterStore } from "./store.js";
 
+declare const process: { env: { NODE_ENV?: string } } | undefined;
+
 const DEFAULT_MAX_ROWS = 50_000;
 const EMPTY_SPEC: FilterSpec = { clauses: [] };
 
@@ -20,14 +22,20 @@ export interface UseGridFiltersOptions {
      * `fields` in order — only correct when those indices match the grid.
      */
     readonly columns?: readonly GridColumn[];
+    /**
+     * Persistence. The first instance passed (or an internal `memoryStore()`)
+     * is pinned for the hook's lifetime, so `store: urlStore({ param: "f" })`
+     * inline in render is safe. Remount to switch stores.
+     */
     readonly store?: FilterStore;
     readonly maxRows?: number;
 }
 
 export interface UseGridFiltersResult {
     readonly spec: FilterSpec;
-    readonly setSpec: (spec: FilterSpec) => void;
-    readonly setClause: (key: string, clause: FilterClause | undefined) => void;
+    /** `undefined` clears the spec (so `onSpec: filters.setSpec` is safe). */
+    readonly setSpec: (spec: FilterSpec | undefined) => void;
+    readonly setClause: (key: string, clause: FilterClause | readonly FilterClause[] | undefined) => void;
     readonly clear: () => void;
     readonly rows: number;
     readonly getCellContent: DataEditorProps["getCellContent"];
@@ -45,23 +53,25 @@ function identityIndex(row: number): number {
     return row;
 }
 
-function nodeEnv(): string | undefined {
-    const g = globalThis as { process?: { env?: { NODE_ENV?: string } } };
-    return g.process?.env?.NODE_ENV;
-}
-
 function rejectOp(key: string, op: string, kind: string): void {
-    if (nodeEnv() !== "production") {
+    // `process.env.NODE_ENV` must appear literally so bundlers can replace it.
+    if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
         throw new RangeError(`Filter op "${op}" is not allowed for field "${key}" (${kind})`);
     }
+}
+
+function asClauseList(clause: FilterClause | readonly FilterClause[] | undefined): FilterClause[] {
+    if (clause === undefined) return [];
+    if (Array.isArray(clause)) return [...(clause as readonly FilterClause[])];
+    return [clause as FilterClause];
 }
 
 export function useGridFilters(options: UseGridFiltersOptions): UseGridFiltersResult {
     const { fields, rows, getCellContent, columns: columnsIn, store: storeIn, maxRows = DEFAULT_MAX_ROWS } = options;
 
-    const defaultStore = React.useRef<FilterStore | null>(null);
-    if (defaultStore.current === null) defaultStore.current = memoryStore();
-    const store = storeIn ?? defaultStore.current;
+    const storeRef = React.useRef<FilterStore | null>(null);
+    if (storeRef.current === null) storeRef.current = storeIn ?? memoryStore();
+    const store = storeRef.current;
 
     const [spec, setSpecState] = React.useState<FilterSpec>(() => store.get());
     React.useEffect(() => {
@@ -92,29 +102,34 @@ export function useGridFilters(options: UseGridFiltersOptions): UseGridFiltersRe
     );
 
     const setSpec = React.useCallback(
-        (next: FilterSpec) => {
-            store.set(next);
+        (next: FilterSpec | undefined) => {
+            store.set(next ?? EMPTY_SPEC);
         },
         [store]
     );
 
     const setClause = React.useCallback(
-        (key: string, clause: FilterClause | undefined) => {
+        (key: string, clause: FilterClause | readonly FilterClause[] | undefined) => {
             const field = fields.find(f => f.key === key);
-            if (clause !== undefined && field !== undefined && !isOpAllowed(field.kind, clause.op)) {
-                rejectOp(key, clause.op, field.kind);
-                return;
+            const incoming = asClauseList(clause);
+            for (const c of incoming) {
+                if (field !== undefined && !isOpAllowed(field.kind, c.op)) {
+                    rejectOp(key, c.op, field.kind);
+                    return;
+                }
             }
-            const rest = spec.clauses.filter(c =>
+            const current = store.get();
+            const rest = current.clauses.filter(c =>
                 field !== undefined ? !clauseMatchesField(c, field) : c.column !== key
             );
-            const nextClauses = clause === undefined ? rest : [...rest, { ...clause, column: clause.column || key }];
+            const nextClauses =
+                incoming.length === 0 ? rest : [...rest, ...incoming.map(c => ({ ...c, column: c.column || key }))];
             store.set({
-                ...(spec.conjunction !== undefined ? { conjunction: spec.conjunction } : {}),
+                ...(current.conjunction !== undefined ? { conjunction: current.conjunction } : {}),
                 clauses: nextClauses,
             });
         },
-        [fields, spec, store]
+        [fields, store]
     );
 
     const clear = React.useCallback(() => {
@@ -141,7 +156,7 @@ export function useGridFilters(options: UseGridFiltersOptions): UseGridFiltersRe
         facets: evaluated.facets,
         status: active ? "filtering" : "idle",
         matched: active ? evaluated.matched : rows,
-        truncated: active ? evaluated.truncated : false,
+        truncated: evaluated.truncated,
         fields,
         toSearchParams,
         fromSearchParams,

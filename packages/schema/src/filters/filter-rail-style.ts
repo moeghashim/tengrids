@@ -11,6 +11,23 @@ export const RailRoot = styled.div`
     background: var(--gdg-bg-cell, #ffffff);
 `;
 
+export const ChipCluster = styled.div`
+    display: inline-flex;
+    align-items: stretch;
+    max-width: 320px;
+    border: 1px solid var(--gdg-border-color, rgba(115, 116, 131, 0.16));
+    border-radius: var(--gdg-rounding-radius, 4px);
+    background: var(--gdg-bg-header, #f7f7f8);
+    color: var(--gdg-text-dark, #313139);
+    overflow: hidden;
+
+    &[data-active="true"] {
+        background: var(--gdg-accent-color, #4f5dff);
+        color: var(--gdg-accent-fg, #ffffff);
+        border-color: var(--gdg-accent-color, #4f5dff);
+    }
+`;
+
 export const Chip = styled.button`
     appearance: none;
     display: inline-flex;
@@ -18,25 +35,18 @@ export const Chip = styled.button`
     gap: 6px;
     max-width: 280px;
     padding: 4px 10px;
-    border: 1px solid var(--gdg-border-color, rgba(115, 116, 131, 0.16));
-    border-radius: var(--gdg-rounding-radius, 4px);
-    background: var(--gdg-bg-header, #f7f7f8);
-    color: var(--gdg-text-dark, #313139);
+    border: none;
+    background: transparent;
+    color: inherit;
     font-family: inherit;
     font-size: 13px;
     line-height: 1.3;
     cursor: pointer;
     text-align: left;
 
-    &[data-active="true"] {
-        background: var(--gdg-accent-color, #4f5dff);
-        color: var(--gdg-accent-fg, #ffffff);
-        border-color: var(--gdg-accent-color, #4f5dff);
-    }
-
     &:focus {
         outline: 2px solid var(--gdg-accent-color, #4f5dff);
-        outline-offset: 1px;
+        outline-offset: -2px;
     }
 `;
 
@@ -49,10 +59,11 @@ export const ChipLabel = styled.span`
 export const ChipClear = styled.button`
     appearance: none;
     border: none;
+    border-left: 1px solid currentColor;
     background: transparent;
     color: inherit;
     cursor: pointer;
-    padding: 0;
+    padding: 4px 8px;
     margin: 0;
     font-size: 14px;
     line-height: 1;
@@ -63,7 +74,8 @@ export const ChipClear = styled.button`
     }
 
     &:focus {
-        outline: 1px solid currentColor;
+        outline: 2px solid var(--gdg-accent-color, #4f5dff);
+        outline-offset: -2px;
     }
 `;
 

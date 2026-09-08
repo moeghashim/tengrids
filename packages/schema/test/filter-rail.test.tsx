@@ -181,9 +181,38 @@ describe("FilterRail", () => {
         expect(screen.queryByTestId("filter-option-status-active")).toBeNull();
     });
 
-    it("does not use innerHTML", () => {
-        const { container } = render(<Harness />);
-        expect(container.innerHTML.includes("dangerouslySetInnerHTML")).toBe(false);
+    it("renders hostile clause values as text, not HTML", () => {
+        const store = memoryStore({
+            clauses: [{ column: "name", op: "contains", value: "<img src=x onerror=alert(1)>" }],
+        });
+        render(<Harness store={store} />);
+        const chip = screen.getByTestId("filter-chip-name");
+        expect(chip.querySelector("img")).toBeNull();
+        expect(chip.querySelector("button")).toBeNull();
+        expect(chip.textContent).toContain("<img src=x");
+    });
+
+    it("keeps a draft operator until a value is typed", async () => {
+        const store = memoryStore();
+        render(<Harness store={store} />);
+        await userEvent.click(screen.getByTestId("filter-chip-name"));
+        await userEvent.selectOptions(screen.getByLabelText("Name operator"), "startsWith");
+        expect(store.get().clauses).toEqual([]);
+        expect((screen.getByLabelText("Name operator") as HTMLSelectElement).value).toBe("startsWith");
+        await userEvent.type(screen.getByLabelText("Name value"), "Ad");
+        expect(store.get().clauses[0]).toMatchObject({ column: "name", op: "startsWith", value: "Ad" });
+    });
+
+    it("does not write both range bounds under OR", async () => {
+        const store = memoryStore({ conjunction: "or", clauses: [] });
+        render(<Harness store={store} />);
+        await userEvent.click(screen.getByTestId("filter-chip-cost"));
+        await userEvent.type(screen.getByLabelText("Cost from"), "10");
+        await userEvent.type(screen.getByLabelText("Cost to"), "20");
+        const ops = store.get().clauses.map(c => c.op);
+        expect(ops).toContain("gte");
+        expect(ops).not.toContain("lte");
+        expect(store.get().conjunction).toBe("or");
     });
 });
 
@@ -200,30 +229,33 @@ describe("FilterRail keyboard (B5)", () => {
 
     it("tabs between chips, Enter opens, Escape closes, arrows move in the list", async () => {
         render(<Harness />);
-        const name = screen.getByTestId("filter-chip-name");
-        name.focus();
+        await userEvent.tab();
+        expect(document.activeElement).toBe(screen.getByTestId("filter-chip-name"));
         await userEvent.tab();
         expect(document.activeElement).toBe(screen.getByTestId("filter-chip-cost"));
         await userEvent.tab();
         expect(document.activeElement).toBe(screen.getByTestId("filter-chip-status"));
         await userEvent.keyboard("{Enter}");
-        const dialog = screen.getByRole("dialog");
-        expect(dialog).toBeTruthy();
-        const first = screen.getByTestId("filter-option-status-draft") as HTMLInputElement;
-        first.focus();
+        expect(screen.getByRole("dialog")).toBeTruthy();
+        expect(document.activeElement).toBe(screen.getByTestId("filter-option-status-draft"));
         await userEvent.keyboard("{ArrowDown}");
         expect(document.activeElement).toBe(screen.getByTestId("filter-option-status-active"));
         await userEvent.keyboard("{Escape}");
         expect(screen.queryByRole("dialog")).toBeNull();
+        expect(document.activeElement).toBe(screen.getByTestId("filter-chip-status"));
     });
 
-    it("Space opens a chip and toggles a checkbox", async () => {
+    it("Space opens a chip and toggles a checkbox without imperative focus", async () => {
         const store = memoryStore();
         render(<Harness store={store} />);
-        screen.getByTestId("filter-chip-status").focus();
+        await userEvent.tab();
+        await userEvent.tab();
+        await userEvent.tab();
+        expect(document.activeElement).toBe(screen.getByTestId("filter-chip-status"));
         await userEvent.keyboard(" ");
         expect(screen.getByRole("dialog")).toBeTruthy();
-        screen.getByTestId("filter-option-status-active").focus();
+        expect(document.activeElement).toBe(screen.getByTestId("filter-option-status-draft"));
+        await userEvent.keyboard("{ArrowDown}");
         await userEvent.keyboard(" ");
         expect(store.get().clauses[0]).toMatchObject({ op: "in", value: ["active"] });
     });

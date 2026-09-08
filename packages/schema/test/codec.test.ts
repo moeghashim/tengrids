@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { FilterClause, FilterOp, FilterSpec } from "../src/index.js";
-import { FILTER_OPS, fromSearchParams, toSearchParams } from "../src/index.js";
+import { FILTER_OPS, fromQueryString, fromSearchParams, toQueryString, toSearchParams } from "../src/index.js";
 
 function roundTrip(spec: FilterSpec, param = "f"): FilterSpec {
-    const encoded = toSearchParams(spec, param);
-    return fromSearchParams(encoded, param);
+    return fromQueryString(toQueryString(spec, param), param);
 }
 
 function normalize(spec: FilterSpec): FilterSpec {
@@ -26,9 +25,21 @@ describe("URL codec", () => {
                 { column: "name", op: "contains", value: "acme" },
             ],
         };
+        expect(toQueryString(spec, "f")).toBe("f=status:in:draft,active&f=cost:gte:100&f=name:contains:acme&fx=or");
         const p = toSearchParams(spec, "f");
         expect(p.getAll("f")).toEqual(["status:in:draft,active", "cost:gte:100", "name:contains:acme"]);
         expect(p.get("fx")).toBe("or");
+    });
+
+    it("keeps commas inside enum values as %2C on the wire", () => {
+        const spec: FilterSpec = { clauses: [{ column: "tags", op: "in", value: ["a,b"] }] };
+        expect(toQueryString(spec, "f")).toBe("f=tags:in:a%2Cb");
+        expect(fromQueryString("f=tags:in:a%2Cb", "f").clauses[0]?.value).toEqual(["a,b"]);
+    });
+
+    it("normalizes a scalar in-value to an array", () => {
+        const spec: FilterSpec = { clauses: [{ column: "status", op: "in", value: "draft" }] };
+        expect(roundTrip(spec).clauses[0]?.value).toEqual(["draft"]);
     });
 
     it("defaults conjunction to and by omitting the companion param", () => {

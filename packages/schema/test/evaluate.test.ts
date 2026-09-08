@@ -82,4 +82,26 @@ describe("evaluateGridFilters", () => {
         const r = evaluateGridFilters({ clauses: [] }, many, cols, 80, getUnique, 80);
         expect(r.facets.has("name")).toBe(false);
     });
+
+    it("matches multi-value enum rows against individual facet values", () => {
+        const enumFields: FilterField[] = [
+            { key: "tags", title: "Tags", kind: "enum", values: ["draft", "active"], multiple: true },
+        ];
+        const cols: GridColumn[] = [{ id: "tags", title: "Tags", width: 1 }];
+        const rows = [["draft", "active"], ["draft"], ["active"]];
+        const getCell = ([, row]: Item): GridCell => ({
+            kind: GridCellKind.Bubble,
+            data: rows[row],
+            allowOverlay: false,
+        });
+        const spec: FilterSpec = { clauses: [{ column: "tags", op: "in", value: ["active"] }] };
+        const r = evaluateGridFilters(spec, enumFields, cols, 3, getCell, 3);
+        expect(r.mapping).toEqual([0, 2]);
+        const facet = r.facets.get("tags");
+        expect(facet?.kind).toBe("values");
+        if (facet?.kind !== "values") return;
+        const byVal = Object.fromEntries(facet.values.map(v => [v.value, v.count]));
+        expect(byVal.active).toBe(2);
+        expect(byVal.draft).toBe(2);
+    });
 });

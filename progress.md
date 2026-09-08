@@ -167,4 +167,5 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 - Suites: schema 114, ai 127, core 387, cells 64, source 7; `npm run build` and `npx storybook build` green. B1 perf timed `evaluateGridFilters` with `vi.useRealTimers()` (localeCompare fast-path for string `in`/`eq`).
 - Branch: `feat/filters` · Actor: Grok 4.6 via pi
 - PR: https://github.com/moeghashim/tengrids/pull/12 · last sha `9f679b0` (Linux rail baselines).
+- Review round 1 (Astra 14 + Fable 10): setSpec(undefined), store.get() mutations, lazy popstate, pinned inline urlStore, readable toQueryString, enum membership, range-under-OR, sibling clear + focus restore, truncated always when capped, stories tsc, AI integration test. B6 no longer crashes.
 

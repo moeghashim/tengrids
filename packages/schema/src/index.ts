@@ -45,6 +45,8 @@ export {
     isOpAllowed,
     toSearchParams,
     fromSearchParams,
+    toQueryString,
+    fromQueryString,
     conjunctionParam,
     memoryStore,
     urlStore,

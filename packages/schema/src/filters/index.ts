@@ -1,5 +1,5 @@
 export { FILTER_OPS, FILTER_OPS_BY_KIND, isFilterOp, isOpAllowed } from "./ops.js";
-export { toSearchParams, fromSearchParams, conjunctionParam } from "./codec.js";
+export { toSearchParams, fromSearchParams, toQueryString, fromQueryString, conjunctionParam } from "./codec.js";
 export { memoryStore, urlStore, type FilterStore, type UrlStoreOptions } from "./store.js";
 export {
     evaluateGridFilters,

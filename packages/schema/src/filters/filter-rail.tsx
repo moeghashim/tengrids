@@ -6,6 +6,7 @@ import type { Facet } from "./evaluate.js";
 import {
     Chip,
     ChipClear,
+    ChipCluster,
     ChipLabel,
     ClearAll,
     ControlInput,
@@ -71,8 +72,15 @@ function EnumControl(props: { field: FilterField; filters: UseGridFiltersResult 
     const q = query.trim().toLowerCase();
     const shown = q === "" ? known : known.filter(v => (field.labels?.[v] ?? v).toLowerCase().includes(q));
     const showSearch = known.length > 8;
+    const multi = field.multiple !== false;
+    const inputType = multi ? "checkbox" : "radio";
 
     const toggle = (value: string): void => {
+        if (!multi) {
+            if (selected.has(value) && selected.size === 1) filters.setClause(field.key, undefined);
+            else filters.setClause(field.key, { column: field.key, op: "in", value: [value] });
+            return;
+        }
         const next = new Set(selected);
         if (next.has(value)) next.delete(value);
         else next.add(value);
@@ -83,7 +91,7 @@ function EnumControl(props: { field: FilterField; filters: UseGridFiltersResult 
     const onListKeyDown = (e: React.KeyboardEvent<HTMLDivElement>): void => {
         if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
         e.preventDefault();
-        const boxes = e.currentTarget.querySelectorAll("input[type='checkbox']");
+        const boxes = e.currentTarget.querySelectorAll("input[type='checkbox'], input[type='radio']");
         const i = [...boxes].indexOf(document.activeElement as HTMLInputElement);
         const dir = e.key === "ArrowDown" ? 1 : -1;
         const next = boxes[(i + dir + boxes.length) % boxes.length] as HTMLInputElement | undefined;
@@ -105,7 +113,8 @@ function EnumControl(props: { field: FilterField; filters: UseGridFiltersResult 
                 {shown.map(value => (
                     <OptionRow key={value}>
                         <input
-                            type="checkbox"
+                            type={inputType}
+                            name={multi ? undefined : `gdg-enum-${field.key}`}
                             checked={selected.has(value)}
                             onChange={() => toggle(value)}
                             data-testid={`filter-option-${field.key}-${value}`}
@@ -130,26 +139,34 @@ function RangeControl(props: { field: FilterField; filters: UseGridFiltersResult
     const to = isDate ? toDateInput(lte?.value) : lte?.value === undefined ? "" : String(lte.value);
     const phFrom = facet?.kind === "range" ? (isDate ? toDateInput(facet.min) : String(facet.min)) : "";
     const phTo = facet?.kind === "range" ? (isDate ? toDateInput(facet.max) : String(facet.max)) : "";
+    const orMode = filters.spec.conjunction === "or";
 
     const apply = (nextFrom: string, nextTo: string): void => {
-        const rest = filters.spec.clauses.filter(c => !clauses.includes(c));
+        const useFrom = nextFrom;
+        let useTo = nextTo;
+        if (orMode && nextFrom !== "" && nextTo !== "") {
+            // Two bounds under OR would mean `x >= a OR x <= b` (almost everything).
+            useTo = "";
+        }
         const added: FilterClause[] = [];
-        if (nextFrom !== "") {
-            const value = isDate ? nextFrom : Number(nextFrom);
+        if (useFrom !== "") {
+            const value = isDate ? useFrom : Number(useFrom);
             if (isDate || Number.isFinite(value)) added.push({ column: field.key, op: "gte", value });
         }
-        if (nextTo !== "") {
-            const value = isDate ? nextTo : Number(nextTo);
+        if (useTo !== "") {
+            const value = isDate ? useTo : Number(useTo);
             if (isDate || Number.isFinite(value)) added.push({ column: field.key, op: "lte", value });
         }
-        filters.setSpec({
-            ...(filters.spec.conjunction !== undefined ? { conjunction: filters.spec.conjunction } : {}),
-            clauses: [...rest, ...added],
-        });
+        filters.setClause(field.key, added.length === 0 ? undefined : added);
     };
 
     return (
         <FieldList>
+            {orMode && (
+                <TruncatedNote>
+                    From and To together require AND; only From is applied while matching any clause.
+                </TruncatedNote>
+            )}
             <ControlLabel>
                 From
                 <ControlInput
@@ -164,9 +181,10 @@ function RangeControl(props: { field: FilterField; filters: UseGridFiltersResult
                 To
                 <ControlInput
                     type={isDate ? "date" : "number"}
-                    value={to}
+                    value={orMode && from !== "" ? "" : to}
                     placeholder={phTo}
                     aria-label={`${field.title} to`}
+                    disabled={orMode && from !== ""}
                     onChange={e => apply(from, e.target.value)}
                 />
             </ControlLabel>
@@ -179,20 +197,24 @@ const TEXT_OPS: readonly FilterOp[] = ["contains", "notContains", "startsWith", 
 function TextControl(props: { field: FilterField; filters: UseGridFiltersResult }): React.ReactElement {
     const { field, filters } = props;
     const clause = clausesForField(filters.spec.clauses, field)[0];
-    const op: FilterOp = clause?.op !== undefined && TEXT_OPS.includes(clause.op) ? clause.op : "contains";
-    const value = clause?.value === undefined ? "" : String(clause.value);
+    const committedOp: FilterOp = clause?.op !== undefined && TEXT_OPS.includes(clause.op) ? clause.op : "contains";
+    const committedValue = clause?.value === undefined ? "" : String(clause.value);
+    const [draftOp, setDraftOp] = React.useState<FilterOp>(committedOp);
+    const [draftValue, setDraftValue] = React.useState(committedValue);
+    React.useEffect(() => {
+        setDraftOp(committedOp);
+        setDraftValue(committedValue);
+    }, [committedOp, committedValue]);
+
     const allowed = FILTER_OPS_BY_KIND[field.kind];
     const ops = TEXT_OPS.filter(o => allowed.includes(o));
 
-    const apply = (nextOp: FilterOp, nextValue: string): void => {
+    const commit = (nextOp: FilterOp, nextValue: string): void => {
         if (nextOp === "empty" || nextOp === "notEmpty") {
             filters.setClause(field.key, { column: field.key, op: nextOp });
             return;
         }
-        if (nextValue === "") {
-            filters.setClause(field.key, undefined);
-            return;
-        }
+        if (nextValue === "") return;
         filters.setClause(field.key, { column: field.key, op: nextOp, value: nextValue });
     };
 
@@ -201,9 +223,13 @@ function TextControl(props: { field: FilterField; filters: UseGridFiltersResult 
             <ControlLabel>
                 Operator
                 <ControlSelect
-                    value={op}
+                    value={draftOp}
                     aria-label={`${field.title} operator`}
-                    onChange={e => apply(e.target.value as FilterOp, value)}
+                    onChange={e => {
+                        const nextOp = e.target.value as FilterOp;
+                        setDraftOp(nextOp);
+                        commit(nextOp, draftValue);
+                    }}
                 >
                     {ops.map(o => (
                         <option key={o} value={o}>
@@ -212,12 +238,17 @@ function TextControl(props: { field: FilterField; filters: UseGridFiltersResult 
                     ))}
                 </ControlSelect>
             </ControlLabel>
-            {op !== "empty" && op !== "notEmpty" && (
+            {draftOp !== "empty" && draftOp !== "notEmpty" && (
                 <ControlInput
                     type="text"
-                    value={value}
+                    value={draftValue}
                     aria-label={`${field.title} value`}
-                    onChange={e => apply(op, e.target.value)}
+                    onChange={e => {
+                        const nextValue = e.target.value;
+                        setDraftValue(nextValue);
+                        if (nextValue === "") filters.setClause(field.key, undefined);
+                        else commit(draftOp, nextValue);
+                    }}
                 />
             )}
         </FieldList>
@@ -288,6 +319,14 @@ const AnchoredPopover: React.FC<AnchoredPopoverProps> = ({ anchor, labelledBy, o
     };
 
     React.useEffect(() => {
+        const root = ref.current;
+        const focusable = root?.querySelector<HTMLElement>(
+            "input, select, textarea, button, [tabindex]:not([tabindex='-1'])"
+        );
+        focusable?.focus();
+    }, []);
+
+    React.useEffect(() => {
         const onDoc = (e: MouseEvent): void => {
             const t = e.target;
             if (!(t instanceof Node)) return;
@@ -296,7 +335,10 @@ const AnchoredPopover: React.FC<AnchoredPopoverProps> = ({ anchor, labelledBy, o
             onClose();
         };
         const onKey = (e: KeyboardEvent): void => {
-            if (e.key === "Escape") onClose();
+            if (e.key === "Escape") {
+                e.stopPropagation();
+                onClose();
+            }
         };
         document.addEventListener("mousedown", onDoc);
         document.addEventListener("keydown", onKey);
@@ -327,6 +369,15 @@ export const FilterRail: React.FC<FilterRailProps> = ({ filters, renderField }) 
         return map;
     });
 
+    const closeAndRestore = React.useCallback(() => {
+        const key = rail.openKey;
+        rail.close();
+        if (key !== undefined) {
+            const chip = chipRefs.current.get(key);
+            chip?.focus();
+        }
+    }, [rail]);
+
     return (
         <RailRoot data-testid="filter-rail">
             {rail.fields.map(field => {
@@ -334,43 +385,43 @@ export const FilterRail: React.FC<FilterRailProps> = ({ filters, renderField }) 
                 const active = rail.isActive(field.key);
                 const summary = rail.summary(field.key);
                 const open = rail.openKey === field.key;
-                const custom = renderField?.(field, { close: rail.close, filters });
+                const custom = renderField?.(field, { close: closeAndRestore, filters });
                 return (
                     <React.Fragment key={field.key}>
-                        <Chip
-                            type="button"
-                            id={id.chip}
-                            data-testid={`filter-chip-${field.key}`}
-                            data-active={active ? "true" : "false"}
-                            aria-label={field.title}
-                            aria-expanded={open}
-                            aria-haspopup="dialog"
-                            aria-controls={open ? id.dialog : undefined}
-                            ref={el => {
-                                if (el === null) chipRefs.current.delete(field.key);
-                                else chipRefs.current.set(field.key, el);
-                            }}
-                            onClick={() => rail.toggle(field.key)}
-                        >
-                            <ChipLabel>{summary ?? field.title}</ChipLabel>
+                        <ChipCluster data-active={active ? "true" : "false"}>
+                            <Chip
+                                type="button"
+                                id={id.chip}
+                                data-testid={`filter-chip-${field.key}`}
+                                aria-label={field.title}
+                                aria-expanded={open}
+                                aria-haspopup="dialog"
+                                aria-controls={open ? id.dialog : undefined}
+                                ref={el => {
+                                    if (el === null) chipRefs.current.delete(field.key);
+                                    else chipRefs.current.set(field.key, el);
+                                }}
+                                onClick={() => rail.toggle(field.key)}
+                            >
+                                <ChipLabel>{summary ?? field.title}</ChipLabel>
+                            </Chip>
                             {active && (
                                 <ChipClear
                                     type="button"
                                     aria-label={`Clear ${field.title}`}
-                                    onClick={e => {
-                                        e.stopPropagation();
+                                    onClick={() => {
                                         rail.clearField(field.key);
                                     }}
                                 >
                                     ×
                                 </ChipClear>
                             )}
-                        </Chip>
+                        </ChipCluster>
                         {open && chipRefs.current.get(field.key) !== undefined && (
                             <AnchoredPopover
                                 anchor={chipRefs.current.get(field.key) as HTMLButtonElement}
                                 labelledBy={id.chip}
-                                onClose={rail.close}
+                                onClose={closeAndRestore}
                             >
                                 <div id={id.dialog}>
                                     {custom !== undefined && custom !== null ? (

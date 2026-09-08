@@ -74,13 +74,15 @@ describe("urlStore", () => {
         expect(new URLSearchParams(window.location.search).get("f")).toBeNull();
     });
 
-    it("listens to popstate", () => {
+    it("listens to popstate only while subscribed", () => {
         window.history.replaceState(null, "", "/");
         const store = urlStore({ param: "f" });
+        const off = store.subscribe(() => undefined);
         store.set(specA);
         window.history.replaceState(null, "", "/");
         window.dispatchEvent(new PopStateEvent("popstate"));
         expect(store.get().clauses).toEqual([]);
+        off();
     });
 
     it("notifies subscribers after set and popstate", () => {
@@ -102,5 +104,22 @@ describe("urlStore", () => {
         off();
         store.set(specA);
         expect(fn).not.toHaveBeenCalled();
+    });
+
+    it("detaches popstate on last unsubscribe and refreshes on resubscribe", () => {
+        window.history.replaceState(null, "", "/");
+        const store = urlStore({ param: "f" });
+        const a = vi.fn();
+        const b = vi.fn();
+        const offA = store.subscribe(a);
+        const offB = store.subscribe(b);
+        store.set(specA);
+        offA();
+        offB();
+        window.history.replaceState(null, "", "/?f=cost:gte:10");
+        window.dispatchEvent(new PopStateEvent("popstate"));
+        expect(store.get()).toEqual(specA);
+        store.subscribe(() => undefined);
+        expect(store.get().clauses).toEqual([{ column: "cost", op: "gte", value: 10 }]);
     });
 });

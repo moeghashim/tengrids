@@ -26,7 +26,7 @@
     ],
     "scripts": {
         "build": "node ../../scripts/cli.mjs build schema",
-        "lint": "eslint src --ext .ts,.tsx && ts-helper -p ./tsconfig.json -r ./src/index.ts -c --package-regex packages/core && tsc --noEmit -p tsconfig.json",
+        "lint": "eslint src --ext .ts,.tsx && ts-helper -p ./tsconfig.json -r ./src/index.ts -c --package-regex packages/core && tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.stories.json",
         "test": "vitest"
     },
     "repository": {

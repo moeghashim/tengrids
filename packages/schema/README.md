@@ -130,7 +130,7 @@ const filters = useGridFilters({
 <DataEditor {...grid} rows={filters.rows} getCellContent={filters.getCellContent} />
 ```
 
-`useGridFilters` returns `spec`, `setSpec`, `setClause(key, clause | undefined)`, `clear()`, remapped `rows` / `getCellContent` / `getOriginalIndex` (same contract as `useColumnSort`), `facets`, `status` (`idle` | `filtering`), `matched`, `truncated`, and `toSearchParams` / `fromSearchParams`. Evaluation is one synchronous pass over `min(rows, maxRows)`, memoized on `(spec, rows, getCellContent)`. Facet counts apply every clause except the field's own.
+`useGridFilters` returns `spec`, `setSpec` (`undefined` clears, so `onSpec: filters.setSpec` type-checks), `setClause(key, clause | clause[] | undefined)`, `clear()`, remapped `rows` / `getCellContent` / `getOriginalIndex` (same contract as `useColumnSort`), `facets`, `status` (`idle` | `filtering` after a non-empty spec is applied), `matched`, `truncated` (true whenever evaluation was capped at `maxRows`, including an empty spec), and `toSearchParams` / `fromSearchParams`. Evaluation is one synchronous pass over `min(rows, maxRows)`, memoized on `(spec, rows, getCellContent)`. Facet counts apply every clause except the field's own. Number/date From+To together require AND (under OR only one bound is applied).
 
 `setClause` with a disallowed op throws `RangeError` when `process.env.NODE_ENV !== "production"`, otherwise no-ops.
 
@@ -150,7 +150,7 @@ const filters = useGridFilters({
 `FilterStore` is `{ get(): FilterSpec; set(spec): void; subscribe(listener): () => void }`. Subscription in the hook is `useState` + `useEffect` (React 16–19; no `useSyncExternalStore`).
 
 - `memoryStore(initial?)` — default, ephemeral.
-- `urlStore({ param = "filter", history = "replace" | "push" })` — History API, listens to `popstate`, no-ops without `window`. Conjunction is stored as `${param}x=or`.
+- `urlStore({ param = "filter", history = "replace" | "push" })` — History API. The `popstate` listener attaches on first `subscribe` and detaches after the last unsubscribe. Conjunction is stored as `${param}x=or`. `useGridFilters` pins the first `store` instance, so `store: urlStore({ param: "f" })` inline in render is safe; remount to switch stores.
 
 Neither zustand nor nuqs is a dependency. Adapters:
 
@@ -193,7 +193,7 @@ One readable param per clause, values percent-encoded. Enum values containing `,
 ?f=status:in:draft,active&f=cost:gte:100&f=name:contains:acme&fx=or
 ```
 
-`toSearchParams(spec, param?)` / `fromSearchParams(params, param?)` are also exported. Round-trip is identity for any valid spec.
+`toQueryString(spec, param?)` emits that readable form (urlStore writes it). `fromQueryString` parses the raw search so `%2C` in atoms survives. `toSearchParams` / `fromSearchParams` wrap `URLSearchParams` for programmatic use.
 
 ### FilterRail
 

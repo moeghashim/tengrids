@@ -156,27 +156,58 @@ describe("useGridFilters", () => {
         expect(result.current.spec.clauses[0]).toMatchObject({ column: "name", op: "contains", value: "n" });
     });
 
-    it("exposes truncated when rows exceed maxRows and a filter is active", () => {
+    it("exposes truncated whenever facet evaluation is capped, even with an empty spec", () => {
         const data = Array.from({ length: 10 }, (_, i) => makeRow(i));
         const { result } = renderHook(() =>
             useGridFilters({ fields, columns, rows: 10, getCellContent: getter(data), maxRows: 4 })
         );
-        expect(result.current.truncated).toBe(false);
+        expect(result.current.truncated).toBe(true);
+        expect(result.current.rows).toBe(10);
         act(() => result.current.setClause("paid", { column: "paid", op: "eq", value: true }));
         expect(result.current.truncated).toBe(true);
         expect(result.current.rows).toBeLessThanOrEqual(4);
     });
 
-    it("composes with useColumnSort via getOriginalIndex", () => {
-        const data = [makeRow(2), makeRow(1), makeRow(4)]; // costs 2, 1, 4 — statuses closed, active, active
+    it("setSpec(undefined) clears, and consecutive setClause calls in one act both stick", () => {
+        const data = [makeRow(0), makeRow(1)];
+        const { result } = renderHook(() => useGridFilters({ fields, columns, rows: 2, getCellContent: getter(data) }));
+        act(() => {
+            result.current.setClause("status", { column: "status", op: "in", value: ["draft"] });
+            result.current.setClause("cost", { column: "cost", op: "gte", value: 0 });
+        });
+        expect(result.current.spec.clauses).toEqual([
+            { column: "status", op: "in", value: ["draft"] },
+            { column: "cost", op: "gte", value: 0 },
+        ]);
+        act(() => result.current.setSpec(undefined));
+        expect(result.current.spec.clauses).toEqual([]);
+    });
+
+    it("no-ops a disallowed op when process is missing (browser production bundle)", () => {
+        const data = [makeRow(0)];
+        const { result } = renderHook(() => useGridFilters({ fields, columns, rows: 1, getCellContent: getter(data) }));
+        const saved = (globalThis as { process?: NodeJS.Process }).process;
+        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+        delete (globalThis as { process?: NodeJS.Process }).process;
+        try {
+            expect(() =>
+                result.current.setClause("cost", { column: "cost", op: "contains", value: "x" })
+            ).not.toThrow();
+            expect(result.current.spec.clauses).toEqual([]);
+        } finally {
+            (globalThis as { process?: NodeJS.Process }).process = saved;
+        }
+    });
+
+    it("composes filter-then-sort with a non-identity permutation", () => {
+        const data = [
+            { ...makeRow(1), status: "active" as const, cost: 50, name: "hi" },
+            { ...makeRow(0), status: "draft" as const, cost: 1, name: "lo" },
+            { ...makeRow(1), status: "active" as const, cost: 10, name: "mid" },
+        ];
         const getCellContent = getter(data);
         const { result } = renderHook(() => {
-            const filters = useGridFilters({
-                fields,
-                columns,
-                rows: data.length,
-                getCellContent,
-            });
+            const filters = useGridFilters({ fields, columns, rows: data.length, getCellContent });
             const sorted = useColumnSort({
                 columns,
                 rows: filters.rows,
@@ -187,11 +218,58 @@ describe("useGridFilters", () => {
             return { filters, sorted, original };
         });
         act(() => result.current.filters.setClause("status", { column: "status", op: "in", value: ["active"] }));
-        // remaining original indices 1 (cost 1) and 2 (cost 4); sort asc → 1 then 2
         expect(result.current.filters.rows).toBe(2);
-        expect(result.current.original(0)).toBe(1);
+        expect(result.current.original(0)).toBe(2);
+        expect(result.current.original(1)).toBe(0);
+        expect(result.current.sorted.getCellContent([1, 0])).toMatchObject({ data: 10 });
+        expect(result.current.sorted.getCellContent([0, 1])).toMatchObject({ data: "hi" });
+    });
+
+    it("composes sort-then-filter with a non-identity permutation", () => {
+        const data = [
+            { ...makeRow(1), status: "active" as const, cost: 50, name: "hi" },
+            { ...makeRow(0), status: "draft" as const, cost: 1, name: "lo" },
+            { ...makeRow(1), status: "active" as const, cost: 10, name: "mid" },
+        ];
+        const getCellContent = getter(data);
+        const { result } = renderHook(() => {
+            const sorted = useColumnSort({
+                columns,
+                rows: data.length,
+                getCellContent,
+                sort: { column: columns[1], direction: "desc" },
+            });
+            const filters = useGridFilters({
+                fields,
+                columns,
+                rows: data.length,
+                getCellContent: sorted.getCellContent,
+            });
+            const original = (i: number) => sorted.getOriginalIndex(filters.getOriginalIndex(i));
+            return { filters, sorted, original };
+        });
+        act(() => result.current.filters.setClause("status", { column: "status", op: "in", value: ["active"] }));
+        expect(result.current.filters.rows).toBe(2);
+        expect(result.current.original(0)).toBe(0);
         expect(result.current.original(1)).toBe(2);
-        expect(result.current.sorted.getCellContent([1, 0])).toMatchObject({ data: 1 });
+        expect(result.current.filters.getCellContent([1, 0])).toMatchObject({ data: 50 });
+    });
+
+    it("does not rescan when inputs are unchanged", () => {
+        const data = [makeRow(0), makeRow(1)];
+        const getCellContent = getter(data);
+        let scans = 0;
+        const counting: typeof getCellContent = item => {
+            scans++;
+            return getCellContent(item);
+        };
+        const { rerender } = renderHook(() =>
+            useGridFilters({ fields, columns, rows: data.length, getCellContent: counting })
+        );
+        const afterFirst = scans;
+        expect(afterFirst).toBeGreaterThan(0);
+        rerender();
+        expect(scans).toBe(afterFirst);
     });
 });
 

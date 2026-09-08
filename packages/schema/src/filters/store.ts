@@ -1,5 +1,5 @@
 import type { FilterSpec } from "../filter-spec.js";
-import { fromSearchParams, toSearchParams, conjunctionParam } from "./codec.js";
+import { fromQueryString, toQueryString, conjunctionParam } from "./codec.js";
 
 export interface FilterStore {
     get(): FilterSpec;
@@ -39,14 +39,10 @@ export interface UrlStoreOptions {
 }
 
 function writeUrl(spec: FilterSpec, param: string, history: "replace" | "push"): void {
-    const current = new URLSearchParams(window.location.search);
-    current.delete(param);
-    current.delete(conjunctionParam(param));
-    const encoded = toSearchParams(spec, param);
-    for (const [key, value] of encoded.entries()) {
-        current.append(key, value);
-    }
-    const qs = current.toString();
+    const extra = new URLSearchParams(window.location.search);
+    extra.delete(param);
+    extra.delete(conjunctionParam(param));
+    const qs = toQueryString(spec, param, extra);
     const url = `${window.location.pathname}${qs === "" ? "" : `?${qs}`}${window.location.hash}`;
     if (history === "push") {
         window.history.pushState(null, "", url);
@@ -55,9 +51,15 @@ function writeUrl(spec: FilterSpec, param: string, history: "replace" | "push"):
     }
 }
 
+function readLocation(param: string): FilterSpec {
+    return fromQueryString(window.location.search, param);
+}
+
 /**
  * Persist the spec in `window.location.search` through the History API.
  * Safe under SSR (falls back to `memoryStore`). Default param is `"filter"`.
+ * The `popstate` listener is attached on the first `subscribe` and removed
+ * after the last unsubscribe.
  */
 export function urlStore(options: UrlStoreOptions = {}): FilterStore {
     const param = options.param ?? "filter";
@@ -65,13 +67,13 @@ export function urlStore(options: UrlStoreOptions = {}): FilterStore {
     if (typeof window === "undefined") {
         return memoryStore();
     }
-    let spec: FilterSpec = fromSearchParams(new URLSearchParams(window.location.search), param);
+    let spec: FilterSpec = readLocation(param);
     const listeners = new Set<() => void>();
+    let listening = false;
     const onPopState = (): void => {
-        spec = fromSearchParams(new URLSearchParams(window.location.search), param);
+        spec = readLocation(param);
         notify(listeners);
     };
-    window.addEventListener("popstate", onPopState);
     return {
         get: () => spec,
         set: next => {
@@ -81,8 +83,17 @@ export function urlStore(options: UrlStoreOptions = {}): FilterStore {
         },
         subscribe: listener => {
             listeners.add(listener);
+            if (!listening) {
+                spec = readLocation(param);
+                window.addEventListener("popstate", onPopState);
+                listening = true;
+            }
             return () => {
                 listeners.delete(listener);
+                if (listeners.size === 0 && listening) {
+                    window.removeEventListener("popstate", onPopState);
+                    listening = false;
+                }
             };
         },
     };

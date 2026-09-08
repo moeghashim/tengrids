@@ -172,4 +172,5 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 - Review round 3: B1 warmup + best-of-3 (threshold 250 ms); evaluator Number/Text fast path (pre-parsed clause values, ASCII in/eq, no per-row parseNumber); esbuild transform of real rejectOp without process. Isolated B1 ~33 ms.
 - Review round 4: text fast reject only for ASCII with no digits/controls; Number fast path only when displayData is undefined or String(data); 2000-pair seeded differential vs matchesClause. Isolated B1 still ~33 ms.
 - Review round 5: deleted matchTextFast; compare() uses a module-level Intl.Collator; Number raw path requires Number.isFinite; Infinity + Thai LC_ALL child-process differential. Isolated B1 ~97 ms.
+- Review round 6: hoist prepareClause into filter-spec (parsed + folds); matchesClause = matchesPreparedClause; cellText/lower once per (row, column); no per-clause asNumber(b). Isolated B1 ~44 ms.
 

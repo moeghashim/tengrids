@@ -1,13 +1,15 @@
 import { GridCellKind, type DataEditorProps, type GridCell, type GridColumn } from "tengrids";
 import {
     asNumber,
+    cellText,
     findColumnIndex,
     matchesClause,
-    matchesClauseParsed,
-    parsedCellNumber,
+    matchesPreparedClause,
+    prepareClause,
     type FilterClause,
     type FilterOp,
     type FilterSpec,
+    type PreparedClause,
 } from "../filter-spec.js";
 import type { FilterField } from "../types.js";
 import { forEachFacetString, numericValue } from "./cell-value.js";
@@ -45,21 +47,6 @@ function isRangeKind(kind: FilterField["kind"]): boolean {
 
 function isAlwaysValuesKind(kind: FilterField["kind"]): boolean {
     return kind === "enum" || kind === "boolean";
-}
-
-interface PreparedClause {
-    readonly clause: FilterClause;
-    readonly parsed: number | undefined;
-    readonly inParsed: readonly (number | undefined)[] | undefined;
-}
-
-function prepareClause(clause: FilterClause): PreparedClause {
-    const v = clause.value;
-    if (clause.op === "in") {
-        const list = Array.isArray(v) ? v : v === undefined ? [] : [v];
-        return { clause, parsed: undefined, inParsed: list.map(asNumber) };
-    }
-    return { clause, parsed: asNumber(v), inParsed: undefined };
 }
 
 function matchNumberData(n: number, op: FilterOp, prep: PreparedClause): boolean | undefined {
@@ -108,7 +95,7 @@ export function matchesEvaluatorClause(
     clause: FilterClause,
     field: FilterField | undefined,
     prep?: PreparedClause,
-    parsedText?: { readonly value: number | undefined }
+    parsedText?: { readonly value: number | undefined; readonly text?: string; readonly lower?: string }
 ): boolean {
     if (
         field !== undefined &&
@@ -134,7 +121,10 @@ export function matchesEvaluatorClause(
         const eq = cell.data === clause.value;
         return clause.op === "eq" ? eq : !eq;
     }
-    return matchesClauseParsed(cell, clause, parsedText !== undefined ? parsedText.value : parsedCellNumber(cell));
+    const text = parsedText?.text ?? cellText(cell);
+    const lower = parsedText?.lower ?? text.toLowerCase();
+    const parsed = parsedText !== undefined ? parsedText.value : asNumber(text);
+    return matchesPreparedClause(cell, ready, parsed, text, lower);
 }
 
 /**
@@ -157,6 +147,25 @@ export function evaluateGridFilters(
     const clauseCols = spec.clauses.map(c => findColumnIndex(columns, c.column));
     const clauseFields = spec.clauses.map(c => fields.find(f => clauseMatchesField(c, f)));
     const prepared = spec.clauses.map(prepareClause);
+    const colNeedsParsed: boolean[] = new Array(columns.length);
+    for (let c = 0; c < columns.length; c++) colNeedsParsed[c] = false;
+    for (let i = 0; i < prepared.length; i++) {
+        const idx = clauseCols[i];
+        if (idx === -1) continue;
+        const prep = prepared[i];
+        if (prep.parsed !== undefined) {
+            colNeedsParsed[idx] = true;
+            continue;
+        }
+        if (prep.inParsed !== undefined) {
+            for (const n of prep.inParsed) {
+                if (n !== undefined) {
+                    colNeedsParsed[idx] = true;
+                    break;
+                }
+            }
+        }
+    }
     const fieldCols = fields.map(f => {
         const byKey = findColumnIndex(columns, f.key);
         return byKey === -1 ? findColumnIndex(columns, f.title) : byKey;
@@ -172,13 +181,15 @@ export function evaluateGridFilters(
     const scratch: GridCell[] = new Array(columns.length);
     const hits: boolean[] = new Array(spec.clauses.length);
     const fetched: boolean[] = new Array(columns.length);
-    const parsedReady: boolean[] = new Array(columns.length);
+    const viewReady: boolean[] = new Array(columns.length);
+    const texts: string[] = new Array(columns.length);
+    const lowers: string[] = new Array(columns.length);
     const parsedOf: Array<number | undefined> = new Array(columns.length);
 
     for (let r = 0; r < limit; r++) {
         for (let c = 0; c < columns.length; c++) {
             fetched[c] = false;
-            parsedReady[c] = false;
+            viewReady[c] = false;
         }
         for (let i = 0; i < clauseCols.length; i++) {
             const idx = clauseCols[i];
@@ -201,19 +212,47 @@ export function evaluateGridFilters(
         for (let i = 0; i < spec.clauses.length; i++) {
             const idx = clauseCols[i];
             const cell = idx === -1 ? undefined : scratch[idx];
-            let parsed: number | undefined;
+            let hit = false;
             if (cell !== undefined && idx !== -1) {
-                if (parsedReady[idx] !== true) {
-                    parsedOf[idx] = parsedCellNumber(cell);
-                    parsedReady[idx] = true;
+                if (viewReady[idx] !== true) {
+                    const display = cellText(cell);
+                    texts[idx] = display;
+                    lowers[idx] = display.toLowerCase();
+                    parsedOf[idx] = colNeedsParsed[idx] ? asNumber(display) : undefined;
+                    viewReady[idx] = true;
                 }
-                parsed = parsedOf[idx];
+                const field = clauseFields[i];
+                const prep = prepared[i];
+                const clause = spec.clauses[i];
+                if (
+                    field !== undefined &&
+                    field.kind === "enum" &&
+                    clause.op === "in" &&
+                    (field.multiple === true || cell.kind === GridCellKind.Bubble)
+                ) {
+                    hit = matchesEnumIn(cell, clause, field);
+                } else if (
+                    cell.kind === GridCellKind.Number &&
+                    typeof cell.data === "number" &&
+                    Number.isFinite(cell.data) &&
+                    (cell.displayData === undefined || cell.displayData === String(cell.data))
+                ) {
+                    const fast = matchNumberData(cell.data, clause.op, prep);
+                    hit =
+                        fast !== undefined
+                            ? fast
+                            : matchesPreparedClause(cell, prep, parsedOf[idx], texts[idx], lowers[idx]);
+                } else if (
+                    cell.kind === GridCellKind.Boolean &&
+                    (clause.op === "eq" || clause.op === "neq") &&
+                    typeof clause.value === "boolean"
+                ) {
+                    const eq = cell.data === clause.value;
+                    hit = clause.op === "eq" ? eq : !eq;
+                } else {
+                    hit = matchesPreparedClause(cell, prep, parsedOf[idx], texts[idx], lowers[idx]);
+                }
             }
-            const hit =
-                cell !== undefined &&
-                matchesEvaluatorClause(cell, spec.clauses[i], clauseFields[i], prepared[i], {
-                    value: parsed,
-                });
             hits[i] = hit;
             if (hit) fullOr = true;
             else fullAnd = false;

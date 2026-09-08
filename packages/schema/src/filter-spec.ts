@@ -113,7 +113,19 @@ function parseNumber(text: string): number | undefined {
     return undefined;
 }
 
-function cellText(cell: GridCell): string {
+export function asNumber(v: unknown): number | undefined {
+    if (typeof v === "number") return Number.isNaN(v) ? undefined : v;
+    if (typeof v === "boolean") return v ? 1 : 0;
+    if (typeof v === "string") {
+        const n = parseNumber(v);
+        if (n !== undefined) return n;
+        const d = Date.parse(v);
+        return Number.isNaN(d) ? undefined : d;
+    }
+    return undefined;
+}
+
+export function cellText(cell: GridCell): string {
     switch (cell.kind) {
         case GridCellKind.Text:
         case GridCellKind.Number:
@@ -143,74 +155,111 @@ export function parsedCellNumber(cell: GridCell): number | undefined {
     return asNumber(cellText(cell));
 }
 
-export function asNumber(v: unknown): number | undefined {
-    if (typeof v === "number") return Number.isNaN(v) ? undefined : v;
-    if (typeof v === "boolean") return v ? 1 : 0;
-    if (typeof v === "string") {
-        const n = parseNumber(v);
-        if (n !== undefined) return n;
-        const d = Date.parse(v);
-        return Number.isNaN(d) ? undefined : d;
+export interface PreparedClause {
+    readonly clause: FilterClause;
+    readonly parsed: number | undefined;
+    readonly fold: string;
+    readonly display: string;
+    readonly valueIsString: boolean;
+    readonly inParsed: readonly (number | undefined)[] | undefined;
+    readonly inFolds: readonly string[] | undefined;
+    readonly inDisplay: readonly string[] | undefined;
+    readonly inIsString: readonly boolean[] | undefined;
+}
+
+export function prepareClause(clause: FilterClause): PreparedClause {
+    const v = clause.value;
+    if (clause.op === "in") {
+        const list = Array.isArray(v) ? v : v === undefined ? [] : [v];
+        return {
+            clause,
+            parsed: undefined,
+            fold: "",
+            display: "",
+            valueIsString: false,
+            inParsed: list.map(asNumber),
+            inFolds: list.map(item => String(item).toLowerCase()),
+            inDisplay: list.map(item => String(item ?? "")),
+            inIsString: list.map(item => typeof item === "string"),
+        };
     }
-    return undefined;
+    return {
+        clause,
+        parsed: asNumber(v),
+        fold: v === undefined ? "" : String(v).toLowerCase(),
+        display: String(v ?? ""),
+        valueIsString: typeof v === "string",
+        inParsed: undefined,
+        inFolds: undefined,
+        inDisplay: undefined,
+        inIsString: undefined,
+    };
 }
 
 const collator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
 
-function compare(a: string, b: unknown, an: number | undefined): number | undefined {
-    const bn = asNumber(b);
+function compare(a: string, an: number | undefined, bn: number | undefined, bDisplay: string): number {
     if (an !== undefined && bn !== undefined) return an === bn ? 0 : an < bn ? -1 : 1;
-    return collator.compare(a, String(b ?? ""));
+    return collator.compare(a, bDisplay);
 }
 
-/** Evaluate one clause against one cell. */
-export function matchesClause(cell: GridCell, clause: FilterClause): boolean {
-    return matchesClauseParsed(cell, clause, asNumber(cellText(cell)));
-}
-
-/** Same as `matchesClause` with a precomputed `asNumber(cellText(cell))`. */
-export function matchesClauseParsed(cell: GridCell, clause: FilterClause, parsedText: number | undefined): boolean {
-    const text = cellText(cell);
-    const lower = text.toLowerCase();
-    const v = clause.value;
-    const vs = v === undefined ? "" : String(v).toLowerCase();
-    switch (clause.op) {
+/** Evaluate a prepared clause against one cell. Optional `text`/`lower` avoid re-deriving the display. */
+export function matchesPreparedClause(
+    cell: GridCell,
+    prepared: PreparedClause,
+    parsedText: number | undefined,
+    text: string = cellText(cell),
+    lower: string = text.toLowerCase()
+): boolean {
+    const op = prepared.clause.op;
+    switch (op) {
         case "contains":
-            return lower.includes(vs);
+            return lower.includes(prepared.fold);
         case "notContains":
-            return !lower.includes(vs);
+            return !lower.includes(prepared.fold);
         case "startsWith":
-            return lower.startsWith(vs);
+            return lower.startsWith(prepared.fold);
         case "endsWith":
-            return lower.endsWith(vs);
+            return lower.endsWith(prepared.fold);
         case "empty":
             return text.trim() === "";
         case "notEmpty":
             return text.trim() !== "";
         case "in": {
-            const list = Array.isArray(v) ? v : v === undefined ? [] : [v];
-            return list.some(x => {
-                if (typeof x === "string" && lower === x.toLowerCase()) return true;
-                return compare(text, x, parsedText) === 0;
-            });
+            const folds = prepared.inFolds;
+            const parsed = prepared.inParsed;
+            const displays = prepared.inDisplay;
+            const isStr = prepared.inIsString;
+            if (folds === undefined || parsed === undefined || displays === undefined || isStr === undefined) {
+                return false;
+            }
+            for (let i = 0; i < folds.length; i++) {
+                if (isStr[i] && lower === folds[i]) return true;
+                if (compare(text, parsedText, parsed[i], displays[i]) === 0) return true;
+            }
+            return false;
         }
         case "eq":
-            if (typeof v === "string" && lower === vs) return true;
-            return compare(text, v, parsedText) === 0;
+            if (prepared.valueIsString && lower === prepared.fold) return true;
+            return compare(text, parsedText, prepared.parsed, prepared.display) === 0;
         case "neq":
-            if (typeof v === "string" && lower === vs) return false;
-            return compare(text, v, parsedText) !== 0;
+            if (prepared.valueIsString && lower === prepared.fold) return false;
+            return compare(text, parsedText, prepared.parsed, prepared.display) !== 0;
         case "gt":
         case "gte":
         case "lt":
         case "lte": {
-            const c = compare(text, v, parsedText);
-            if (c === undefined) return false;
-            return clause.op === "gt" ? c > 0 : clause.op === "gte" ? c >= 0 : clause.op === "lt" ? c < 0 : c <= 0;
+            const c = compare(text, parsedText, prepared.parsed, prepared.display);
+            return op === "gt" ? c > 0 : op === "gte" ? c >= 0 : op === "lt" ? c < 0 : c <= 0;
         }
         default:
             return false;
     }
+}
+
+/** Evaluate one clause against one cell. */
+export function matchesClause(cell: GridCell, clause: FilterClause): boolean {
+    return matchesPreparedClause(cell, prepareClause(clause), parsedCellNumber(cell));
 }
 
 export function findColumnIndex(columns: readonly GridColumn[], name: string): number {

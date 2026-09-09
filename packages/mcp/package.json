@@ -1,6 +1,6 @@
 {
     "name": "tengrids-mcp",
-    "version": "6.0.4-alpha26",
+    "version": "6.0.4-alpha27",
     "description": "stdio MCP server for tengrids docs, examples, and schema scaffolding",
     "sideEffects": false,
     "type": "module",
@@ -45,7 +45,7 @@
     "dependencies": {
         "@modelcontextprotocol/sdk": "1.30.0",
         "semver": "7.8.5",
-        "tengrids-schema": "6.0.4-alpha26",
+        "tengrids-schema": "6.0.4-alpha27",
         "zod": "3.25.76"
     },
     "devDependencies": {

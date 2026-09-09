@@ -1,6 +1,6 @@
 # tengrids-ai changelog
 
-## Unreleased
+## 6.0.4-alpha27
 
 - `useNaturalLanguageFilter` accepts `onSpec?: (spec: FilterSpec | undefined) => void`, called when the compiled spec changes (wire to `useGridFilters().setSpec` so AI results appear as chips).
 

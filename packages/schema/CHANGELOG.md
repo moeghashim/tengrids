@@ -1,6 +1,6 @@
 # tengrids-schema changelog
 
-## Unreleased
+## 6.0.4-alpha27
 
 - Faceted filters: `useGridFilters`, `FilterField` ops table, `memoryStore` / `urlStore` / `FilterStore`, readable URL codec (`toSearchParams` / `fromSearchParams`), `FilterRail` + headless `useFilterRailState`.
 - Package now depends on `@linaria/react` and emits `dist/index.css` (side-effectful CSS), matching `tengrids-cells`.

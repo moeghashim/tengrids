@@ -225,3 +225,11 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 ### PR4 release/alpha27 — IN PROGRESS
 - PR: https://github.com/moeghashim/tengrids/pull/24 · last sha 9ef93e8 · base main. Four commits: 3f6d7e7 version+locks, 9846bd8 changelogs, 1449f6a validation log, 9ef93e8 PR metadata; this fix commit follows. X6 local gate green; publishing is Moe's.
 - Branch: `release/alpha27` · Actor: Grok 4.6 via pi
+
+### PR4 release/alpha27 — MERGED
+- Orchestration: Grok 4.6 (pi) executed PR4 in the `release-alpha27` worktree; GPT Astra (Codex gpt-6-astra medium, `codex exec`) approved on `9ef93e8` with one nit (progress.md commit count, fixed in `aee042b`); Claude Fable 5.1 reviewed with no blocking findings and signed off on `aee042b`; merged as `64654ca` (PR #24).
+- Contents: root + six packages at `6.0.4-alpha27` with exact workspace pins (incl. schema's `tengrids-source` devDependency); root, cra5-gdg, and next-gdg lockfiles regenerated (cra5-gdg also absorbed core's 2026-09-05 devDependency changes and npm 11's `"requires": {}` serialization; no dependency versions moved); `Unreleased` → `6.0.4-alpha27` in the ai, schema, and mcp changelogs. No source changes.
+- Process notes: `pi -p` launched from a background task must get `< /dev/null` on stdin or it blocks forever (two nit-fix runs hung for hours with no session file); `codex exec review --base` rejects a custom prompt, so reviewer 1 ran as plain `codex exec -s workspace-write -o <file>` (no network in its sandbox, so `gh` fails there and the reviewer reads PR_BODY.md from the worktree).
+- Decision (Moe, 2026-09-09): Moe asked the orchestrator to merge PR4 and publish `6.0.4-alpha27` after running `npm login` (deviation from PRD §8 X6 / §9.5 "No agent publishes", accepted by Moe in chat).
+- PR4 CI on the merge commit `64654ca`: pending (see next entry). Publish: pending (see next entry).
+- Branch: `main` · Actor: Claude Fable 5.1

@@ -213,3 +213,11 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 - Follow-ups (not blocking): make the `storybook/internal/csf` import lazy inside `docsBundle()` so the CLI works without Storybook; PR4 renames the three `Unreleased` changelog headings.
 - PR3 CI on the merge commit `3d1a43f`: pending (see next entry).
 - Branch: `main` · Actor: Claude Fable 5.1
+
+### PR4 release/alpha27 — IN PROGRESS
+- Bumped root + all six packages to 6.0.4-alpha27 via npm run cli -- version; workspace-to-workspace pins (incl. schema's tengrids-source devDependency) are exact. Regenerated root lock (version strings only) and both consumer-project locks. Renamed ## Unreleased to ## 6.0.4-alpha27 in ai/schema/mcp CHANGELOGs. Docs already use the canonical skill install line (no #feat/mcp). Running the PR4 validation suite next.
+- Branch: `release/alpha27` · Actor: Grok 4.6 via pi
+
+### PR4 release/alpha27 — IN PROGRESS
+- Validation green: build (all six workspaces + lint), core 387/387, cells 64/64, source 7/7, schema 131/131, ai 128/128, mcp 87/87, test-projects (cra5-gdg + next-gdg npm ci + file: links), C2 tsc --noEmit all four scaffold combos, pack dry-run all six tarballs at 6.0.4-alpha27 (mcp includes docs/index.json, docs/llms-full.txt, dist/cli.js). MCP server initialize reports {name: tengrids-mcp, version: 6.0.4-alpha27}. Docs needed no edits (skill line already canonical; alpha25 mentions are the upstream fork point). Left mcp test fixtures at alpha26 — they are frozen sample bundles, not the live package version.
+- Branch: `release/alpha27` · Actor: Grok 4.6 via pi

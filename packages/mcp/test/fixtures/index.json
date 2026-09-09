@@ -1,0 +1,78 @@
+{
+    "version": "6.0.4-alpha26",
+    "docs": [
+        {
+            "id": "api",
+            "title": "API reference",
+            "path": "packages/core/API.md",
+            "headings": [
+                {
+                    "heading": "HTML/CSS Prerequisites",
+                    "level": 2,
+                    "text": "The Grid depends on there being a root level portal div. Give the parent a real width and height. Import tengrids/dist/index.css. Overlay editors mount into #portal."
+                },
+                {
+                    "heading": "Theme",
+                    "level": 2,
+                    "text": "The theme prop styles the grid. textDark, bgCell, accentColor. Dark mode is a dark theme object, not a CSS class."
+                },
+                {
+                    "heading": "freezeColumns",
+                    "level": 2,
+                    "text": "Frozen columns stay in place while the rest of the grid scrolls. Set freezeColumns to a number greater than 0."
+                }
+            ],
+            "text": "# API reference\n\n## HTML/CSS Prerequisites\n\nThe Grid depends on there being a root level portal div. Give the parent a real width and height. Import tengrids/dist/index.css. Overlay editors mount into #portal.\n\n## Theme\n\nThe theme prop styles the grid. textDark, bgCell, accentColor. Dark mode is a dark theme object, not a CSS class.\n\n## freezeColumns\n\nFrozen columns stay in place while the rest of the grid scrolls. Set freezeColumns to a number greater than 0.\n"
+        },
+        {
+            "id": "readme-core",
+            "title": "tengrids",
+            "path": "packages/core/README.md",
+            "headings": [
+                {
+                    "heading": "FAQ",
+                    "level": 2,
+                    "text": "Nothing shows up? Read the Prerequisites section."
+                }
+            ],
+            "text": "# tengrids\n\n## FAQ\n\nNothing shows up? Read the Prerequisites section.\n"
+        },
+        {
+            "id": "readme-schema",
+            "title": "tengrids-schema",
+            "path": "packages/schema/README.md",
+            "headings": [
+                {
+                    "heading": "Column factories",
+                    "level": 2,
+                    "text": "Every factory returns a ColumnDef. Shared options below."
+                },
+                {
+                    "heading": "`col.text`",
+                    "level": 3,
+                    "text": "Grid cell: Text. Options: multiline, maxLength."
+                },
+                {
+                    "heading": "`col.number`",
+                    "level": 3,
+                    "text": "Grid cell: Number. format currency percent integer."
+                }
+            ],
+            "text": "# tengrids-schema\n\n## Column factories\n\nEvery factory returns a ColumnDef. Shared options below.\n\n### `col.text`\n\nGrid cell: Text. Options: multiline, maxLength.\n\n### `col.number`\n\nGrid cell: Number. format currency percent integer.\n"
+        },
+        {
+            "id": "story-core-docs-examples-freeze-columns",
+            "title": "Glide-Data-Grid/DataEditor Demos",
+            "path": "packages/core/src/docs/examples/freeze-columns.stories.tsx",
+            "headings": [
+                {
+                    "heading": "FreezeColumns",
+                    "level": 2,
+                    "storyId": "glide-data-grid-dataeditor-demos--freeze-columns",
+                    "text": "export const FreezeColumns = () => null;\n// freezeColumns example\n"
+                }
+            ],
+            "text": "export default { title: \"Glide-Data-Grid/DataEditor Demos\" };\nexport const FreezeColumns = () => null;\n// freezeColumns example\n"
+        }
+    ]
+}

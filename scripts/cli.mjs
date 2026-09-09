@@ -23,9 +23,10 @@ import {
 } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { storyNameFromExport, toId } from "storybook/internal/csf";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const PACKAGES = ["core", "cells", "source", "schema", "ai"];
+const PACKAGES = ["core", "cells", "source", "schema", "ai", "mcp"];
 const CORE_PKG = "tengrids";
 const BANNER = {
     core: "Glide Data Grid",
@@ -33,6 +34,7 @@ const BANNER = {
     source: "Glide Data Grid Source",
     schema: "tengrids Schema",
     ai: "tengrids AI",
+    mcp: "tengrids MCP",
 };
 const cyan = s => `[0;36m${s}[0m`;
 
@@ -140,6 +142,14 @@ async function buildPackage(name) {
     if (!PACKAGES.includes(name)) throw new Error(`unknown package "${name}" (expected one of ${PACKAGES.join(", ")})`);
     const pkgDir = join(REPO_ROOT, "packages", name);
     console.log(cyan(`🏗️  Building ${BANNER[name]} 🏗️`));
+    if (name === "mcp") {
+        // Node CLI: ESM-only plain tsc to dist/, no linaria. Bundle docs first so dist/cli.js can load them.
+        await docsBundle();
+        mkdirSync(join(pkgDir, "dist"), { recursive: true });
+        await run(bin("tsc"), ["-p", "tsconfig.build.json"], { cwd: pkgDir });
+        console.log(cyan(`🎉 ${BANNER[name]} build complete 🎉`));
+        return;
+    }
     mkdirSync(join(pkgDir, "dist"), { recursive: true });
     await Promise.all([compile(pkgDir, "esm"), compile(pkgDir, "cjs")]);
     generateIndexCss(pkgDir);
@@ -149,7 +159,7 @@ async function buildPackage(name) {
 async function build(args) {
     const all = args.includes("--all");
     const names = all ? PACKAGES : args.filter(a => !a.startsWith("-"));
-    if (names.length === 0) throw new Error("build: specify packages (core, cells, source, schema, ai) or --all");
+    if (names.length === 0) throw new Error("build: specify packages (core, cells, source, schema, ai, mcp) or --all");
     // cells, source, schema, and ai compile against core's dist, so core goes first.
     // ai depends on schema's dist, so schema goes before the remaining packages.
     if (names.includes("core")) await buildPackage("core");
@@ -252,22 +262,193 @@ async function bootstrap() {
             process.platform === "win32" ? "junction" : "dir"
         );
         console.log(`${name}: linked ${CORE_PKG} → packages/core`);
+        const pkg = readJson(join(dir, "package.json"));
+        const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+        for (const [depName, folder] of [
+            ["tengrids-schema", "schema"],
+            ["tengrids-ai", "ai"],
+        ]) {
+            if (typeof deps[depName] === "string" && deps[depName].startsWith("file:")) {
+                const depLink = join(dir, "node_modules", depName);
+                rmSync(depLink, { recursive: true, force: true });
+                symlinkSync(
+                    relative(dirname(depLink), join(REPO_ROOT, "packages", folder)),
+                    depLink,
+                    process.platform === "win32" ? "junction" : "dir"
+                );
+                console.log(`${name}: linked ${depName} → packages/${folder}`);
+            }
+        }
     }
+}
+
+// ------------------------------------------------------------- docs-bundle
+
+function parseHeadings(text) {
+    const headings = [];
+    let heading = "";
+    let level = 0;
+    let buf = [];
+    let inFence = false;
+    const flush = () => {
+        const body = buf.join("\n").replace(/\s+$/u, "");
+        if (heading.length > 0 || body.length > 0) headings.push({ heading, text: body, level });
+        buf = [];
+    };
+    for (const line of text.split(/\n/u)) {
+        if (/^```/u.test(line)) {
+            inFence = !inFence;
+            buf.push(line);
+            continue;
+        }
+        const m = /^(#{1,6})\s+(.*)$/u.exec(line);
+        if (!inFence && m) {
+            flush();
+            level = m[1].length;
+            heading = m[2].trim();
+        } else {
+            buf.push(line);
+        }
+    }
+    flush();
+    return headings;
+}
+
+const STORY_HELPERS = new Set(["Frame", "Box", "Wrapper", "Decorator"]);
+
+function parseStoryHeadings(src) {
+    const title = storyTitle(src, "Story");
+    const matches = [...src.matchAll(/export const ([A-Z][A-Za-z0-9]*)/gu)];
+    const headings = [];
+    for (let i = 0; i < matches.length; i++) {
+        const name = matches[i][1];
+        if (STORY_HELPERS.has(name)) continue;
+        const start = matches[i].index ?? 0;
+        let end = src.length;
+        for (let j = i + 1; j < matches.length; j++) {
+            if (!STORY_HELPERS.has(matches[j][1])) {
+                end = matches[j].index ?? src.length;
+                break;
+            }
+        }
+        headings.push({
+            heading: name,
+            text: src.slice(start, end),
+            level: 2,
+            storyId: toId(title, storyNameFromExport(name)),
+        });
+    }
+    if (headings.length === 0) {
+        return [{ heading: title, text: src, level: 1 }];
+    }
+    return headings;
+}
+
+function firstTitle(text, fallback) {
+    const m = /^#\s+(.+)$/mu.exec(text);
+    return m ? m[1].trim() : fallback;
+}
+
+function storyTitle(src, fallback) {
+    const m = /title:\s*["'`]([^"'`]+)["'`]/u.exec(src);
+    return m ? m[1] : fallback;
+}
+
+function walkStories(dir, out = []) {
+    if (!existsSync(dir)) return out;
+    for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+        if (entry.name === "node_modules" || entry.name === "dist" || entry.name === "coverage") continue;
+        const p = join(dir, entry.name);
+        if (entry.isDirectory()) walkStories(p, out);
+        else if (entry.name.endsWith(".stories.tsx")) out.push(p);
+    }
+    return out;
+}
+
+function storyId(rel) {
+    return (
+        "story-" +
+        rel
+            .replace(/\.stories\.tsx$/u, "")
+            .replace(/^packages\//u, "")
+            .replace(/\//gu, "-")
+    );
+}
+
+function docsBundle() {
+    const outDir = join(REPO_ROOT, "packages", "mcp", "docs");
+    mkdirSync(outDir, { recursive: true });
+
+    const docs = [];
+    const push = (id, fallbackTitle, rel, text, { story = false } = {}) => {
+        docs.push({
+            id,
+            title: story ? storyTitle(text, fallbackTitle) : firstTitle(text, fallbackTitle),
+            path: rel,
+            headings: story ? parseStoryHeadings(text) : parseHeadings(text),
+            text,
+        });
+    };
+
+    const addFile = (rel, id, fallbackTitle) => {
+        const abs = join(REPO_ROOT, rel);
+        if (!existsSync(abs)) {
+            console.warn(`docs-bundle: skip missing ${rel}`);
+            return;
+        }
+        push(id, fallbackTitle, rel, readFileSync(abs, "utf8"));
+    };
+
+    addFile("packages/core/API.md", "api", "API reference");
+    addFile("AGENTS.md", "agents", "AGENTS.md");
+    addFile("llms.txt", "llms", "llms.txt");
+    for (const name of PACKAGES) {
+        addFile(`packages/${name}/README.md`, `readme-${name}`, `${name} README`);
+    }
+
+    const llmsParts = [];
+    for (const rel of [
+        "README.md",
+        "packages/core/API.md",
+        "AGENTS.md",
+        "packages/schema/README.md",
+        "packages/mcp/README.md",
+    ]) {
+        const abs = join(REPO_ROOT, rel);
+        if (existsSync(abs)) llmsParts.push(readFileSync(abs, "utf8"));
+    }
+    const llmsFull = llmsParts.join("\n\n---\n\n");
+    writeFileSync(join(outDir, "llms-full.txt"), llmsFull);
+    push("llms-full", "llms-full.txt", "llms-full.txt", llmsFull);
+
+    for (const name of PACKAGES) {
+        for (const abs of walkStories(join(REPO_ROOT, "packages", name))) {
+            const rel = relative(REPO_ROOT, abs).split(sep).join("/");
+            const src = readFileSync(abs, "utf8");
+            push(storyId(rel), storyId(rel), rel, src, { story: true });
+        }
+    }
+
+    const version = readJson(join(REPO_ROOT, "package.json")).version;
+    writeFileSync(join(outDir, "index.json"), JSON.stringify({ version, docs }));
+    console.log(`docs-bundle: ${docs.length} docs → packages/mcp/docs/`);
 }
 
 // ------------------------------------------------------------------- main
 
 const HELP = `tengrids developer CLI
 
-  build <core|cells|source|schema|ai>... | --all   compile ESM + CJS, extract linaria CSS, emit dist/
+  build <core|cells|source|schema|ai|mcp>... | --all   compile ESM + CJS, extract linaria CSS, emit dist/
+                                          mcp is ESM-only tsc (docs-bundle first, no linaria)
   version [newVersion]                    set the version across all workspace packages
   test [--react 18|19|latest] [--no-restore] [vitest args]
                                           run the core suite, optionally against another React
   bootstrap                               install the downstream consumer test projects
+  docs-bundle                             generate packages/mcp/docs JSON + llms-full.txt
 `;
 
 const [command, ...rest] = process.argv.slice(2);
-const commands = { build, version, test, bootstrap };
+const commands = { build, version, test, bootstrap, "docs-bundle": docsBundle };
 try {
     if (command === undefined || command === "help" || command === "--help") {
         console.log(HELP);

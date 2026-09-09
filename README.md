@@ -28,7 +28,7 @@ This fork tracks upstream v6.0.4-alpha25.
 
 # 📦 Packages
 
-This is an npm-workspaces monorepo publishing five packages to npm:
+This is an npm-workspaces monorepo publishing six packages to npm:
 
 | Package | Directory | What it is |
 | --- | --- | --- |
@@ -37,10 +37,23 @@ This is an npm-workspaces monorepo publishing five packages to npm:
 | `tengrids-source` | [`packages/source`](packages/source) | Data-source hooks (async loading, sorting, undo/redo, …) |
 | `tengrids-schema` | [`packages/schema`](packages/schema) | Declarative schema (`createSchema`, `col.*`, `useSchemaGrid`), `FilterSpec`, faceted filters, and `FilterRail` |
 | `tengrids-ai` | [`packages/ai`](packages/ai) | AI features, bring your own model: AI formula cells, natural-language search/filter, agent-fed data source, smart paste, bulk edit |
+| `tengrids-mcp` | [`packages/mcp`](packages/mcp) | stdio MCP server for docs search, examples, and schema scaffolding |
 
 ## Schema and filters
 
 `tengrids-schema` turns one `createSchema({ name: col.text(), cost: col.number(), ... })` object into grid columns, cells, edits, and `InferRow` types via `useSchemaGrid`. `useGridFilters({ fields: schema.filterFields(), columns, rows, getCellContent, store })` evaluates a serializable `FilterSpec` in one pass, with facet counts, and remaps rows like `useColumnSort`. Persist with `memoryStore()` or `urlStore({ param: "f" })` (readable `?f=status:in:draft,active&f=cost:gte:100`); bring your own zustand/nuqs store through `FilterStore`. `<FilterRail filters={filters} />` is a chip UI styled only with `--gdg-*` (import `tengrids-schema/dist/index.css`). `useNaturalLanguageFilter({ onSpec: filters.setSpec })` writes the same spec so AI chips are editable.
+
+## Agents
+
+Coding agents can install the docs as an MCP server and a skill instead of scraping the repo:
+
+```shell
+npx -y tengrids-mcp
+claude mcp add tengrids -- npx -y tengrids-mcp
+npx skills add https://github.com/moeghashim/tengrids --skill tengrids
+```
+
+Prefer the MCP tools (`list_docs`, `search_docs`, `get_doc`, `get_example`, `scaffold`, `check_setup`) when available; otherwise start at [llms.txt](https://moeghashim.github.io/tengrids/llms.txt). `scaffold` emits a working `createSchema` grid, including the CSS import, `#portal`, and the Next.js `ssr: false` wrapper.
 
 # ⚡ Quick Start
 

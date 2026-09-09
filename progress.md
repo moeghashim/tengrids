@@ -181,3 +181,25 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 - Adjudication: any hand-written shortcut that predicts `localeCompare` leaks (Thai punctuation collation, Turkish i, Infinity); the evaluator now runs the identical comparator via `prepareClause` / `matchesPreparedClause`, and `matchesClause` is defined on top of them.
 - PR2 CI on the merge commit `fd3ed44`: Build ✓, Visual regression ✓ (nine baselines incl. the three rail themes), Storybook deploy ✓ (Extra Packages/Filters live on Pages).
 - Branch: `main` · Actor: Claude Fable 5.1
+
+### PR3 feat/mcp — IN PROGRESS
+- Starting PR3: tengrids-mcp stdio server, docs-bundle, skill, and agent docs plumbing (§7, X1 for mcp, C1–C6).
+- Interpretation: mcp is ESM-only with a plain tsc emit to dist/ (no linaria/CJS). Runtime deps are @modelcontextprotocol/sdk@1.30.0, zod@3.25.76, and tengrids-schema (for createSchema/print). docs/ is a gitignored build artifact; llms-full.txt is generated inside docs-bundle.
+- Branch: `feat/mcp` · Actor: Grok 4.6 via pi
+
+### PR3 feat/mcp — IN PROGRESS
+- Implemented tengrids-mcp (stdio, BM25 search, scaffold via createSchema/print, check_setup, --refresh allow-list), docs-bundle (103 docs, generates llms-full.txt), skills/tengrids, CI test-mcp + C2.
+- Suites: mcp 69, schema 131, ai 128, cells 64, source 7, core 387. npm run build green. Live --refresh: 102 ok, 1 fallback (mcp README not on main yet). C2 tsc --noEmit ok on ScaffoldGrid.tsx in next-gdg (React 17); Next wrapper omitted from tsc because hoisted @types/react 19 clashes with Next 12 JSX.
+- Branch: `feat/mcp` · Actor: Grok 4.6 via pi
+
+### PR3 feat/mcp — IN PROGRESS
+- PR: https://github.com/moeghashim/tengrids/pull/13 · last sha 5e2c603 · base main (PR2 merged as fd3ed44). C5: npx skills add https://github.com/moeghashim/tengrids#feat/mcp --skill tengrids works; /tree/feat/mcp/… is parsed as branch feat.
+- Branch: `feat/mcp` · Actor: Grok 4.6 via pi
+
+### PR3 feat/mcp — IN PROGRESS
+- Addressed Astra 1–12 and Fable 1–12 on PR #13. mcp 85 tests. C2 tsc both Next files for default/filters/ai/filters+ai. Live --refresh 102/1.
+- Branch: `feat/mcp` · Actor: Grok 4.6 via pi
+
+### PR3 feat/mcp — IN PROGRESS
+- Round 2: refresh deadlines via AbortController+setTimeout (injectable, races fetch and body); isSupportedReact uses semver intersects; story Pages ids from @storybook/csf toId at docs-bundle time. mcp 87 tests.
+- Branch: `feat/mcp` · Actor: Grok 4.6 via pi

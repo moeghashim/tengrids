@@ -23,7 +23,10 @@ jobs:
             - run: npm run test-cells
             - run: npm run test-ai
             - run: npm run test-schema
+            - run: npm run test-mcp
             - run: npm run test-projects
+            - name: C2 scaffold compiles in next-gdg
+              run: node packages/mcp/test/c2-compile.mjs
             - name: progress.md is append-only for past days
               if: github.event_name == 'pull_request'
               run: node scripts/progress-append-only-check.mjs --base origin/${{ github.base_ref }}

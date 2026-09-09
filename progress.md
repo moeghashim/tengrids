@@ -221,3 +221,7 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 ### PR4 release/alpha27 — IN PROGRESS
 - Validation green: build (all six workspaces + lint), core 387/387, cells 64/64, source 7/7, schema 131/131, ai 128/128, mcp 87/87, test-projects (cra5-gdg + next-gdg npm ci + file: links), C2 tsc --noEmit all four scaffold combos, pack dry-run all six tarballs at 6.0.4-alpha27 (mcp includes docs/index.json, docs/llms-full.txt, dist/cli.js). MCP server initialize reports {name: tengrids-mcp, version: 6.0.4-alpha27}. Docs needed no edits (skill line already canonical; alpha25 mentions are the upstream fork point). Left mcp test fixtures at alpha26 — they are frozen sample bundles, not the live package version.
 - Branch: `release/alpha27` · Actor: Grok 4.6 via pi
+
+### PR4 release/alpha27 — IN PROGRESS
+- PR: https://github.com/moeghashim/tengrids/pull/24 · last sha 1449f6a · base main. Three commits: 3f6d7e7 version+locks, 9846bd8 changelogs, 1449f6a this log. X6 local gate green; publishing is Moe's.
+- Branch: `release/alpha27` · Actor: Grok 4.6 via pi

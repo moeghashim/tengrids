@@ -17,12 +17,18 @@ Things that break silently if skipped: (1) `DataEditor` fills its parent — giv
 - [AGENTS.md](https://raw.githubusercontent.com/moeghashim/tengrids/main/AGENTS.md): architecture map of the rendering pipeline and the gotchas that matter when changing the grid itself.
 - [Storybook](https://moeghashim.github.io/tengrids/): ~60 live examples; each story's source is the best usage reference for that feature.
 
+## Tools for agents
+
+- MCP server (stdio): `npx -y tengrids-mcp` or `claude mcp add tengrids -- npx -y tengrids-mcp`. Tools: `list_docs`, `get_doc`, `search_docs`, `get_example`, `scaffold`, `check_setup`. Pass `--refresh` to fetch live Pages/GitHub copies at startup (falls back to the bundle).
+- Skill: `npx skills add https://github.com/moeghashim/tengrids --skill tengrids`. Prefer the MCP tools when available; otherwise this file and [llms-full.txt](https://moeghashim.github.io/tengrids/llms-full.txt).
+- Schema package: [tengrids-schema README](https://raw.githubusercontent.com/moeghashim/tengrids/main/packages/schema/README.md) (`createSchema`, `col.*`, `useSchemaGrid`, `useGridFilters`, `FilterRail`).
+
 ## Source
 
-- [GitHub repository](https://github.com/moeghashim/tengrids): npm-workspaces monorepo — `packages/core` (the grid), `packages/cells`, `packages/source`, `packages/schema`, `packages/ai`.
+- [GitHub repository](https://github.com/moeghashim/tengrids): npm-workspaces monorepo — `packages/core` (the grid), `packages/cells`, `packages/source`, `packages/schema`, `packages/ai`, `packages/mcp`.
 - [Upstream: Glide Data Grid](https://github.com/glideapps/glide-data-grid): the original project this fork is based on.
 
 ## Optional
 
-- [llms-full.txt](https://moeghashim.github.io/tengrids/llms-full.txt): README, API reference, and AGENTS.md concatenated into one file.
+- [llms-full.txt](https://moeghashim.github.io/tengrids/llms-full.txt): README, API reference, AGENTS.md, and the schema and mcp package READMEs concatenated into one file.
 - [Changelog](https://raw.githubusercontent.com/moeghashim/tengrids/main/packages/core/CHANGELOG.md): upstream release history up to the fork point.

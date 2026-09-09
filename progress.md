@@ -223,5 +223,5 @@ Result: five bring-your-own-model AI features shipped as a fourth package, 106 t
 - Branch: `release/alpha27` · Actor: Grok 4.6 via pi
 
 ### PR4 release/alpha27 — IN PROGRESS
-- PR: https://github.com/moeghashim/tengrids/pull/24 · last sha 1449f6a · base main. Three commits: 3f6d7e7 version+locks, 9846bd8 changelogs, 1449f6a this log. X6 local gate green; publishing is Moe's.
+- PR: https://github.com/moeghashim/tengrids/pull/24 · last sha 9ef93e8 · base main. Four commits: 3f6d7e7 version+locks, 9846bd8 changelogs, 1449f6a validation log, 9ef93e8 PR metadata; this fix commit follows. X6 local gate green; publishing is Moe's.
 - Branch: `release/alpha27` · Actor: Grok 4.6 via pi

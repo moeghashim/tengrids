@@ -101,7 +101,7 @@
         "storybook": "^9.1.2",
         "tsc-esm-fix": "^3.1.2",
         "typedoc": "^0.28.5",
-        "typescript": "^5.8.3",
+        "typescript": "^7.0.2",
         "vite": "^6.4.3",
         "vitest": "^4.1.11",
         "vitest-canvas-mock": "^1.1.5",

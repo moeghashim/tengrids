@@ -1,6 +1,6 @@
 {
     "name": "tengrids-schema",
-    "version": "6.0.4-alpha26",
+    "version": "6.0.4-alpha27",
     "description": "Declarative schema, cell generators, FilterSpec, faceted filters, and FilterRail for tengrids",
     "sideEffects": [
         "**/*.css"
@@ -46,7 +46,7 @@
         "canvas"
     ],
     "dependencies": {
-        "tengrids": "6.0.4-alpha26",
+        "tengrids": "6.0.4-alpha27",
         "@linaria/react": "^6.3.0"
     },
     "peerDependencies": {
@@ -54,7 +54,7 @@
         "react-dom": "^16.12.0 || 17.x || 18.x || 19.x"
     },
     "devDependencies": {
-        "tengrids-source": "6.0.4-alpha26",
+        "tengrids-source": "6.0.4-alpha27",
         "@glideapps/ts-helper": "6.0.1",
         "eslint": "^8.57.1",
         "eslint-plugin-import": "^2.31.0",
